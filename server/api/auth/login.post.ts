@@ -1,0 +1,64 @@
+import { z } from "zod";
+import { getUserByEmail } from "../../utils/storage";
+import { verifyPassword, createSessionCookie, validateEmail } from "../../utils/auth";
+import {
+  checkLoginRateLimit,
+  recordLoginFailure,
+  resetLoginRateLimit,
+} from "../../utils/rate-limit";
+import { logger } from "../../utils/logger";
+
+const loginSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+});
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody(event);
+
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, message: "参数错误" });
+  }
+
+  const { email: rawEmail, password } = parsed.data;
+
+  const emailResult = validateEmail(rawEmail);
+  if (!emailResult.valid) {
+    throw createError({ statusCode: 400, message: emailResult.message });
+  }
+  const email = emailResult.normalized;
+
+  // Rate limit check
+  if (!checkLoginRateLimit(email)) {
+    throw createError({ statusCode: 429, message: "登录尝试过多，请 5 分钟后再试" });
+  }
+
+  const user = await getUserByEmail(email);
+  if (!user) {
+    recordLoginFailure(email);
+    logger.warn("登录失败：用户不存在", { email });
+    throw createError({ statusCode: 401, message: "邮箱或密码错误" });
+  }
+
+  const valid = await verifyPassword(password, user.passwordHash);
+  if (!valid) {
+    recordLoginFailure(email);
+    logger.warn("登录失败：密码错误", { email, userId: user.id });
+    throw createError({ statusCode: 401, message: "邮箱或密码错误" });
+  }
+
+  resetLoginRateLimit(email);
+  await createSessionCookie(event, user.id);
+
+  logger.info("用户登录成功", { userId: user.id, email });
+
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    balance: user.balance,
+    depositAddress: user.depositAddress,
+    feeRateBps: user.feeRateBps,
+  };
+});
