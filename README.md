@@ -27,7 +27,7 @@
 
 ### 基础设施
 
-- NATS：https://nats.io/
+- NATS：https://nats.io
 - mpcium：https://github.com/fystack/mpcium
 - tronecho：https://github.com/jerryshell/tronecho
 
@@ -83,7 +83,6 @@ tronstore/
 ```bash
 bun run dev          # 启动开发服务器
 bun run build        # 生产构建
-bun run preview      # 预览生产构建
 bun run lint         # 代码检查
 bun run format       # 代码格式化
 bun run typecheck    # 类型检查
