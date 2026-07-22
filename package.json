@@ -31,5 +31,9 @@
     "oxlint": "^1.74.0",
     "tailwindcss": "^4.3.2",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "@unhead/vue": "3.2.1",
+    "unhead": "3.2.1"
   }
 }
