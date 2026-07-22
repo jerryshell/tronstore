@@ -302,6 +302,15 @@ export async function runSweep(): Promise<SweepTask | null> {
       threshold: config.settings.threshold,
     });
 
+    // Step 1: Find candidates
+    const candidates = await findCandidates(config.settings.threshold, config.network);
+    if (candidates.length === 0) {
+      logger.info("没有地址需要归集，跳过");
+      config.settings.lastRunAt = Date.now();
+      await setSweepSettings(config.settings);
+      return null;
+    }
+
     const taskId = v7();
     const task: SweepTask = {
       id: taskId,
@@ -315,16 +324,6 @@ export async function runSweep(): Promise<SweepTask | null> {
       error: null,
     };
     await createSweepTask(task);
-
-    // Step 1: Find candidates
-    const candidates = await findCandidates(config.settings.threshold, config.network);
-    if (candidates.length === 0) {
-      logger.info("没有地址需要归集");
-      task.status = "done";
-      task.finishedAt = Date.now();
-      await updateSweepTask(task);
-      return task;
-    }
     logger.info("找到候选地址", { count: candidates.length });
 
     // Step 2: Gas pre-check

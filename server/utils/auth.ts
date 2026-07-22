@@ -48,7 +48,7 @@ export async function createSessionCookie(event: H3Event, userId: string): Promi
   setCookie(event, SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     path: "/",
     maxAge: SESSION_EXPIRY_MS / 1000,
   });
@@ -85,7 +85,7 @@ export async function getSessionUser(
     setCookie(event, SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       path: "/",
       maxAge: SESSION_EXPIRY_MS / 1000,
     });
