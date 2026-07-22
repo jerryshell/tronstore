@@ -25,31 +25,34 @@ const open = defineModel<boolean>("open", { required: true });
       <div class="space-y-4">
         <UFormField label="名称">
           <UInput
-            :value="formName"
-            @update:value="$emit('update:formName', $event)"
+            :model-value="formName"
+            @update:model-value="$emit('update:formName', $event)"
             placeholder="商品名称"
             class="w-full"
           />
         </UFormField>
         <UFormField label="描述">
           <UTextarea
-            :value="formDesc"
-            @update:value="$emit('update:formDesc', $event)"
+            :model-value="formDesc"
+            @update:model-value="$emit('update:formDesc', $event)"
             placeholder="商品描述"
             class="w-full"
           />
         </UFormField>
         <UFormField label="价格 (USDT)">
           <UInput
-            :value="formPrice"
-            @update:value="$emit('update:formPrice', Number($event))"
+            :model-value="formPrice"
+            @update:model-value="$emit('update:formPrice', Number($event))"
             type="number"
             step="0.000001"
             class="w-full"
           />
         </UFormField>
         <UFormField label="启用">
-          <UCheckbox :checked="formEnabled" @update:checked="$emit('update:formEnabled', $event)" />
+          <UCheckbox
+            :model-value="formEnabled"
+            @update:model-value="$emit('update:formEnabled', $event)"
+          />
         </UFormField>
       </div>
     </template>

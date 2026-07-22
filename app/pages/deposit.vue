@@ -102,7 +102,7 @@ onUnmounted(() => {
             <div class="space-y-2">
               <p class="text-sm text-muted-foreground">充值地址 (TRC20)</p>
               <div class="flex gap-2">
-                <UInput :value="address" readonly class="font-mono text-sm flex-1" />
+                <UInput :model-value="address" readonly class="font-mono text-sm flex-1" />
                 <UButton
                   :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
                   variant="outline"
