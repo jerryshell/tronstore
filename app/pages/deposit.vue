@@ -8,6 +8,7 @@ definePageMeta({
 const toast = useToast();
 const auth = useAuth();
 const { copy, copied } = useClipboard();
+const { formatDate } = useTimezone();
 
 watch(copied, (val) => {
   if (val) toast.add({ title: "地址已复制", color: "success" });
@@ -20,6 +21,7 @@ function copyAddress() {
   });
 }
 
+// === 充值地址 ===
 const address = ref<string | null>(null);
 const effectiveFeeRateBps = ref(200);
 const qrCodeSvg = ref("");
@@ -68,6 +70,42 @@ watch(address, async (val) => {
   }
 });
 
+// === 充值记录 ===
+const items = ref<any[]>([]);
+const cursor = ref<string | null>(null);
+const recordsLoading = ref(false);
+const showDetail = ref(false);
+const detailItem = ref<any>(null);
+
+async function fetchRecords() {
+  recordsLoading.value = true;
+  try {
+    const data = await $fetch("/api/deposits", { query: { limit: 50, cursor: cursor.value } });
+    items.value = (data as any).items || [];
+    cursor.value = (data as any).cursor;
+  } finally {
+    recordsLoading.value = false;
+  }
+}
+
+function viewDetail(item: any) {
+  detailItem.value = item;
+  showDetail.value = true;
+}
+
+// === Tab 切换 ===
+const activeTab = ref("0");
+const tabs = [
+  { label: "充值地址", icon: "i-lucide-wallet" },
+  { label: "充值记录", icon: "i-lucide-list" },
+];
+
+function onTabChange(payload: string | number) {
+  if (String(payload) === "1" && items.value.length === 0) {
+    fetchRecords();
+  }
+}
+
 onMounted(() => {
   fetchAddress();
   if (!address.value) {
@@ -88,45 +126,98 @@ onUnmounted(() => {
 
     <template #body>
       <div class="p-6">
-        <UCard :ui="{ root: 'rounded-lg overflow-hidden ring ring-default' }">
-          <template #header>
-            <h2 class="text-lg font-semibold">充值信息</h2>
-          </template>
+        <UTabs :items="tabs" v-model="activeTab" @update:model-value="onTabChange" class="mb-6" />
 
-          <div v-if="!address" class="text-center py-8 space-y-4">
-            <p class="text-muted-foreground">您还没有充值地址</p>
-            <UButton @click="ensureAddress" :loading="loading">分配充值地址</UButton>
-          </div>
+        <!-- 充值地址 -->
+        <div v-if="activeTab === '0'">
+          <UCard :ui="{ root: 'rounded-lg overflow-hidden ring ring-default' }">
+            <template #header>
+              <h2 class="text-lg font-semibold">充值信息</h2>
+            </template>
 
-          <div v-else class="space-y-4">
-            <div class="space-y-2">
-              <p class="text-sm text-muted-foreground">充值地址 (TRC20)</p>
-              <div class="flex gap-2">
-                <UInput :model-value="address" readonly class="font-mono text-sm flex-1" />
-                <UButton
-                  :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
-                  variant="outline"
-                  @click="copyAddress"
-                />
+            <div v-if="!address" class="text-center py-8 space-y-4">
+              <p class="text-muted-foreground">您还没有充值地址</p>
+              <UButton @click="ensureAddress" :loading="loading">分配充值地址</UButton>
+            </div>
+
+            <div v-else class="space-y-4">
+              <div class="space-y-2">
+                <p class="text-sm text-muted-foreground">充值地址 (TRC20)</p>
+                <div class="flex gap-2">
+                  <UInput :model-value="address" readonly class="font-mono text-sm flex-1" />
+                  <UButton
+                    :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
+                    variant="outline"
+                    @click="copyAddress"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div class="flex justify-center">
-              <div v-if="qrCodeSvg" v-html="qrCodeSvg" class="border p-2 rounded-lg" />
-            </div>
+              <div class="flex justify-center">
+                <div v-if="qrCodeSvg" v-html="qrCodeSvg" class="border p-2 rounded-lg" />
+              </div>
 
-            <div class="text-sm text-muted-foreground">
-              手续费率：{{ (effectiveFeeRateBps / 100).toFixed(2) }}%
-            </div>
+              <div class="text-sm text-muted-foreground">
+                手续费率：{{ (effectiveFeeRateBps / 100).toFixed(2) }}%
+              </div>
 
-            <UAlert
-              color="info"
-              variant="soft"
-              description="请向上述地址转入 USDT (TRC20)，到账后余额将自动更新。"
-            />
+              <UAlert
+                color="info"
+                variant="soft"
+                description="请向上述地址转入 USDT (TRC20)，到账后余额将自动更新。"
+              />
+            </div>
+          </UCard>
+        </div>
+
+        <!-- 充值记录 -->
+        <div v-else>
+          <UTable
+            v-if="!recordsLoading && items.length > 0"
+            :data="items"
+            :columns="[
+              {
+                accessorKey: 'amount',
+                header: '金额',
+                cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + ' USDT',
+              },
+              {
+                accessorKey: 'feeRateBps',
+                header: '手续费率',
+                cell: ({ row }: any) => (row.original.feeRateBps / 100).toFixed(2) + '%',
+              },
+              {
+                accessorKey: 'feeAmount',
+                header: '手续费',
+                cell: ({ row }: any) => (row.original.feeAmount / 1_000_000).toFixed(6) + ' USDT',
+              },
+              {
+                accessorKey: 'creditAmount',
+                header: '到账',
+                cell: ({ row }: any) =>
+                  (row.original.creditAmount / 1_000_000).toFixed(6) + ' USDT',
+              },
+              {
+                accessorKey: 'createdAt',
+                header: '时间',
+                cell: ({ row }: any) => formatDate(row.original.createdAt),
+              },
+              { id: 'actions', header: '操作' },
+            ]"
+          >
+            <template #actions-cell="{ row }">
+              <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
+            </template>
+          </UTable>
+
+          <div v-else-if="recordsLoading" class="space-y-2">
+            <USkeleton v-for="i in 8" :key="i" class="h-10 w-full" />
           </div>
-        </UCard>
+          <div v-else class="text-center text-muted-foreground py-12">暂无充值记录</div>
+        </div>
       </div>
     </template>
   </UDashboardPanel>
+
+  <ModalsDepositDetailModal v-model:open="showDetail" :detail-item="detailItem" />
 </template>

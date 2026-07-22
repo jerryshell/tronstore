@@ -33,15 +33,7 @@ const userLinks = computed(() => [
     },
   },
   {
-    label: "充值记录",
-    icon: "i-lucide-list",
-    to: "/deposits",
-    onSelect: () => {
-      open.value = false;
-    },
-  },
-  {
-    label: "我的钱包",
+    label: "钱包",
     icon: "i-lucide-credit-card",
     to: "/wallet",
     onSelect: () => {
