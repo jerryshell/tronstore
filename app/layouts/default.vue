@@ -170,8 +170,7 @@ const groups = computed(() => [
       </template>
 
       <template #footer="{ collapsed }">
-        <UserMenu v-if="auth.isLoggedIn.value" :collapsed="collapsed" />
-        <GuestMenu v-else :collapsed="collapsed" />
+        <UserMenu :collapsed="collapsed" />
       </template>
     </UDashboardSidebar>
 
