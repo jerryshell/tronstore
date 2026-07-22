@@ -20,7 +20,11 @@ const open = defineModel<boolean>("open", { required: true });
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="editProduct ? '编辑商品' : '添加商品'">
+  <UModal
+    v-model:open="open"
+    :title="editProduct ? '编辑商品' : '添加商品'"
+    :ui="{ footer: 'justify-end' }"
+  >
     <template #body>
       <div class="space-y-4">
         <UFormField label="名称">
@@ -57,8 +61,7 @@ const open = defineModel<boolean>("open", { required: true });
       </div>
     </template>
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton variant="outline" @click="$emit('close')">取消</UButton>
+      <div class="flex justify-end">
         <UButton @click="$emit('save')">{{ editProduct ? "保存" : "添加" }}</UButton>
       </div>
     </template>

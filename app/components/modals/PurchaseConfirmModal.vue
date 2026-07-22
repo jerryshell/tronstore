@@ -14,7 +14,7 @@ const open = defineModel<boolean>("open", { required: true });
 </script>
 
 <template>
-  <UModal v-model:open="open" title="确认购买">
+  <UModal v-model:open="open" title="确认购买" :ui="{ footer: 'justify-end' }">
     <template #body>
       <div v-if="product" class="space-y-3 text-sm">
         <p>确定要购买以下商品吗？</p>
@@ -28,8 +28,7 @@ const open = defineModel<boolean>("open", { required: true });
       </div>
     </template>
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UButton variant="outline" @click="$emit('close')">取消</UButton>
+      <div class="flex justify-end">
         <UButton
           color="primary"
           :loading="loading"
