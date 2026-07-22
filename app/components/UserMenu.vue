@@ -7,23 +7,52 @@ defineProps<{
 
 const auth = useAuth();
 const colorMode = useColorMode();
+const { timezone, setTimezone, getTimezoneOffset } = useTimezone();
+const localTimezone = getTimezoneOffset();
 
-const appearanceItems: DropdownMenuItem[] = [
+const timezoneItems = computed<DropdownMenuItem[]>(() => [
+  {
+    label: "UTC",
+    type: "checkbox",
+    checked: timezone.value === "utc",
+    onUpdateChecked(checked: boolean) {
+      if (checked) setTimezone("utc");
+    },
+    onSelect(e: Event) {
+      e.preventDefault();
+    },
+  },
+  {
+    label: `本地时间 (${localTimezone})`,
+    type: "checkbox",
+    checked: timezone.value === "local",
+    onUpdateChecked(checked: boolean) {
+      if (checked) setTimezone("local");
+    },
+    onSelect(e: Event) {
+      e.preventDefault();
+    },
+  },
+]);
+
+const appearanceItems = computed<DropdownMenuItem[]>(() => [
   {
     label: "浅色",
     icon: "i-lucide-sun",
     type: "checkbox",
-    checked: colorMode.value === "light",
+    checked: colorMode.preference === "light",
+    onUpdateChecked(checked: boolean) {
+      if (checked) colorMode.preference = "light";
+    },
     onSelect(e: Event) {
       e.preventDefault();
-      colorMode.preference = "light";
     },
   },
   {
     label: "深色",
     icon: "i-lucide-moon",
     type: "checkbox",
-    checked: colorMode.value === "dark",
+    checked: colorMode.preference === "dark",
     onUpdateChecked(checked: boolean) {
       if (checked) colorMode.preference = "dark";
     },
@@ -31,7 +60,7 @@ const appearanceItems: DropdownMenuItem[] = [
       e.preventDefault();
     },
   },
-];
+]);
 
 const items = computed<DropdownMenuItem[][]>(() => {
   const groups: DropdownMenuItem[][] = [];
@@ -49,7 +78,16 @@ const items = computed<DropdownMenuItem[][]>(() => {
     {
       label: "外观",
       icon: "i-lucide-sun-moon",
-      children: appearanceItems,
+      children: appearanceItems.value,
+    },
+  ]);
+
+  // 时区设置组
+  groups.push([
+    {
+      label: "时区",
+      icon: "i-lucide-globe",
+      children: timezoneItems.value,
     },
   ]);
 

@@ -51,7 +51,7 @@ const open = defineModel<boolean>("open", { required: true });
         <UFormField label="启用">
           <UCheckbox
             :model-value="formEnabled"
-            @update:model-value="$emit('update:formEnabled', $event)"
+            @update:model-value="$emit('update:formEnabled', $event as boolean)"
           />
         </UFormField>
       </div>

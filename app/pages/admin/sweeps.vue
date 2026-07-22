@@ -4,6 +4,8 @@ definePageMeta({
 });
 
 const toast = useToast();
+const { formatDate } = useTimezone();
+
 const tasks = ref<any[]>([]);
 const loading = ref(true);
 const triggering = ref(false);
@@ -93,13 +95,13 @@ onMounted(fetch);
             {
               accessorKey: 'startedAt',
               header: '开始时间',
-              cell: ({ row }: any) => new Date(row.original.startedAt).toLocaleString(),
+              cell: ({ row }: any) => formatDate(row.original.startedAt),
             },
             {
               accessorKey: 'finishedAt',
               header: '完成时间',
               cell: ({ row }: any) =>
-                row.original.finishedAt ? new Date(row.original.finishedAt).toLocaleString() : '-',
+                row.original.finishedAt ? formatDate(row.original.finishedAt) : '-',
             },
             { id: 'actions', header: '操作' },
           ]"

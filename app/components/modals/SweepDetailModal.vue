@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { formatDate } = useTimezone();
+
 defineProps<{
   detailTask: any;
   loadingDetail: boolean;
@@ -22,11 +24,9 @@ const open = defineModel<boolean>("open", { required: true });
           <span class="text-muted-foreground">归集总额</span>
           <span>{{ (detailTask.totalAmount / 1_000_000).toFixed(6) }} USDT</span>
           <span class="text-muted-foreground">开始时间</span>
-          <span>{{ new Date(detailTask.startedAt).toLocaleString() }}</span>
+          <span>{{ formatDate(detailTask.startedAt) }}</span>
           <span class="text-muted-foreground">完成时间</span>
-          <span>{{
-            detailTask.finishedAt ? new Date(detailTask.finishedAt).toLocaleString() : "-"
-          }}</span>
+          <span>{{ detailTask.finishedAt ? formatDate(detailTask.finishedAt) : "-" }}</span>
         </div>
 
         <div v-if="detailTask.error" class="text-sm text-error">错误：{{ detailTask.error }}</div>

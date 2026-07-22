@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { formatDate } = useTimezone();
+
 defineProps<{
   detailItem: any;
 }>();
@@ -36,10 +38,10 @@ const open = defineModel<boolean>("open", { required: true });
           <span>{{ detailItem.blockNumber }}</span>
 
           <span class="text-muted-foreground">区块时间</span>
-          <span>{{ new Date(detailItem.blockTime).toLocaleString() }}</span>
+          <span>{{ formatDate(detailItem.blockTime) }}</span>
 
           <span class="text-muted-foreground">创建时间</span>
-          <span>{{ new Date(detailItem.createdAt).toLocaleString() }}</span>
+          <span>{{ formatDate(detailItem.createdAt) }}</span>
         </div>
       </div>
     </template>

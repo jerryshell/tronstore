@@ -3,6 +3,8 @@ definePageMeta({
   middleware: ["auth"],
 });
 
+const { formatDate } = useTimezone();
+
 const orders = ref<any[]>([]);
 const cursor = ref<string | null>(null);
 const loading = ref(true);
@@ -50,7 +52,7 @@ onMounted(fetch);
             {
               accessorKey: 'createdAt',
               header: '时间',
-              cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleString(),
+              cell: ({ row }: any) => formatDate(row.original.createdAt),
             },
             { id: 'actions', header: '操作' },
           ]"

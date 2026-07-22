@@ -6,6 +6,8 @@ definePageMeta({
 });
 
 const toast = useToast();
+const { formatDate } = useTimezone();
+
 const users = ref<User[]>([]);
 const loading = ref(true);
 const showDetail = ref(false);
@@ -81,7 +83,7 @@ onMounted(fetch);
             {
               accessorKey: 'createdAt',
               header: '注册时间',
-              cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleString(),
+              cell: ({ row }: any) => formatDate(row.original.createdAt),
             },
             { id: 'actions', header: '操作' },
           ]"

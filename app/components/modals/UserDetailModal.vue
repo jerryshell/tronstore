@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { User } from "~~/shared/types";
 
+const { formatDate } = useTimezone();
+
 const props = defineProps<{
   detailUser: User | null;
 }>();
@@ -59,7 +61,7 @@ async function saveFeeRate() {
           <span class="break-all text-xs">{{ detailUser.depositAddress || "未分配" }}</span>
 
           <span class="text-muted-foreground">注册时间</span>
-          <span>{{ new Date(detailUser.createdAt).toLocaleString() }}</span>
+          <span>{{ formatDate(detailUser.createdAt) }}</span>
         </div>
 
         <USeparator />

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { formatDate } = useTimezone();
+
 defineProps<{
   detailOrder: any;
   admin?: boolean;
@@ -33,7 +35,7 @@ const open = defineModel<boolean>("open", { required: true });
           <span>{{ (detailOrder.price / 1_000_000).toFixed(6) }} USDT</span>
 
           <span class="text-muted-foreground">下单时间</span>
-          <span>{{ new Date(detailOrder.createdAt).toLocaleString() }}</span>
+          <span>{{ formatDate(detailOrder.createdAt) }}</span>
         </div>
       </div>
     </template>

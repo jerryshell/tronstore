@@ -5,6 +5,8 @@ definePageMeta({
 
 const route = useRoute();
 
+const { formatDate } = useTimezone();
+
 const user = ref<any>(null);
 const deposits = ref<any[]>([]);
 const orders = ref<any[]>([]);
@@ -95,7 +97,7 @@ onMounted(fetch);
                 {
                   accessorKey: 'createdAt',
                   header: '时间',
-                  cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleString(),
+                  cell: ({ row }: any) => formatDate(row.original.createdAt),
                 },
               ]"
             />
@@ -115,7 +117,7 @@ onMounted(fetch);
                 {
                   accessorKey: 'createdAt',
                   header: '时间',
-                  cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleString(),
+                  cell: ({ row }: any) => formatDate(row.original.createdAt),
                 },
               ]"
             />
@@ -140,7 +142,7 @@ onMounted(fetch);
                 {
                   accessorKey: 'createdAt',
                   header: '时间',
-                  cell: ({ row }: any) => new Date(row.original.createdAt).toLocaleString(),
+                  cell: ({ row }: any) => formatDate(row.original.createdAt),
                 },
               ]"
             />

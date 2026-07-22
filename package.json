@@ -30,7 +30,8 @@
     "oxfmt": "^0.60.0",
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.7"
   },
   "overrides": {
     "@unhead/vue": "3.2.1",

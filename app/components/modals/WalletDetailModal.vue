@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { formatDate } = useTimezone();
+
 defineProps<{
   detailItem: any;
   detailData: any;
@@ -26,7 +28,7 @@ const open = defineModel<boolean>("open", { required: true });
           <span>{{ (detailItem.balanceAfter / 1_000_000).toFixed(6) }} USDT</span>
 
           <span class="text-muted-foreground">时间</span>
-          <span>{{ new Date(detailItem.createdAt).toLocaleString() }}</span>
+          <span>{{ formatDate(detailItem.createdAt) }}</span>
         </div>
 
         <template v-if="detailData">
