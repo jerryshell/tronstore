@@ -1,7 +1,9 @@
 import { logger } from "../../utils/logger";
 import { serverConfig } from "../../utils/runtime-config";
+import { requireAdmin } from "../../utils/auth";
 
 export default defineEventHandler(async (event): Promise<any> => {
+  await requireAdmin(event);
   const query = getQuery(event);
   const address = query.address as string;
   const limit = parseInt(query.limit as string) || 20;

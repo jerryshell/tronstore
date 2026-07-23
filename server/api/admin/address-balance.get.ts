@@ -1,7 +1,9 @@
 import { getTrxBalance, getUsdtBalance, type TronNetwork } from "../../services/tron";
 import { serverConfig } from "../../utils/runtime-config";
+import { requireAdmin } from "../../utils/auth";
 
 export default defineEventHandler(async (event) => {
+  await requireAdmin(event);
   const query = getQuery(event);
   const address = query.address as string;
 
