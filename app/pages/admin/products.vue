@@ -18,6 +18,22 @@ const formDesc = ref("");
 const formPrice = ref(0);
 const formEnabled = ref(true);
 
+const columns = [
+  { accessorKey: "name", header: "名称" },
+  { accessorKey: "description", header: "描述" },
+  {
+    accessorKey: "price",
+    header: "价格",
+    cell: ({ row }: any) => (row.original.price / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "enabled",
+    header: "状态",
+    cell: ({ row }: any) => (row.original.enabled ? "启用" : "禁用"),
+  },
+  { id: "actions", header: "操作" },
+];
+
 async function fetch() {
   loading.value = true;
   try {
@@ -27,17 +43,21 @@ async function fetch() {
   loading.value = false;
 }
 
+function getFormData() {
+  return {
+    name: formName.value,
+    description: formDesc.value,
+    price: Math.round(formPrice.value * 1_000_000),
+    enabled: formEnabled.value,
+  };
+}
+
 async function addProduct() {
   saving.value = true;
   try {
     await $fetch("/api/admin/products", {
       method: "POST",
-      body: {
-        name: formName.value,
-        description: formDesc.value,
-        price: Math.round(formPrice.value * 1_000_000),
-        enabled: formEnabled.value,
-      },
+      body: getFormData(),
     });
     toast.add({ title: "创建成功", color: "success" });
     closeModal();
@@ -55,12 +75,7 @@ async function updateProduct() {
   try {
     await $fetch(`/api/admin/products/${editProduct.value.id}`, {
       method: "PATCH",
-      body: {
-        name: formName.value,
-        description: formDesc.value,
-        price: Math.round(formPrice.value * 1_000_000),
-        enabled: formEnabled.value,
-      },
+      body: getFormData(),
     });
     toast.add({ title: "更新成功", color: "success" });
     closeModal();
@@ -136,25 +151,7 @@ onMounted(fetch);
 
     <template #body>
       <div class="p-6">
-        <UTable
-          v-if="!loading && products.length > 0"
-          :data="products"
-          :columns="[
-            { accessorKey: 'name', header: '名称' },
-            { accessorKey: 'description', header: '描述' },
-            {
-              accessorKey: 'price',
-              header: '价格',
-              cell: ({ row }: any) => (row.original.price / 1_000_000).toFixed(6) + ' USDT',
-            },
-            {
-              accessorKey: 'enabled',
-              header: '状态',
-              cell: ({ row }: any) => (row.original.enabled ? '启用' : '禁用'),
-            },
-            { id: 'actions', header: '操作' },
-          ]"
-        >
+        <UTable v-if="!loading && products.length > 0" :data="products" :columns="columns">
           <template #actions-cell="{ row }">
             <div class="flex gap-2">
               <UButton size="xs" @click="openEdit(row.original)">编辑</UButton>
@@ -169,10 +166,7 @@ onMounted(fetch);
           </template>
         </UTable>
 
-        <div v-else-if="loading" class="space-y-2">
-          <USkeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-        </div>
-        <div v-else class="text-center text-muted-foreground py-12">暂无商品</div>
+        <AdminTableState v-else :loading="loading" empty-message="暂无商品" />
       </div>
     </template>
   </UDashboardPanel>

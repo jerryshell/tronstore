@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireAdmin, csrfCheck } from "../../utils/auth";
-import { setSystemSettings, setSweepSettings } from "../../utils/storage";
+import { setSystemSettings, setSweepSettings, getSweepSettings } from "../../utils/storage";
 import { logger } from "../../utils/logger";
 
 const settingsSchema = z.object({
@@ -31,15 +31,18 @@ export default defineEventHandler(async (event) => {
   }
 
   // Update sweep settings
-  if (
-    data.sweepTargetAddress !== undefined ||
-    data.sweepGasPoolPrivateKey !== undefined ||
-    data.sweepThreshold !== undefined ||
-    data.sweepGasTrxAmount !== undefined ||
-    data.sweepIntervalMinutes !== undefined ||
-    data.sweepEnabled !== undefined
-  ) {
-    const current = await import("../../utils/storage").then((m) => m.getSweepSettings());
+  const sweepFields = [
+    "sweepTargetAddress",
+    "sweepGasPoolPrivateKey",
+    "sweepThreshold",
+    "sweepGasTrxAmount",
+    "sweepIntervalMinutes",
+    "sweepEnabled",
+  ] as const;
+
+  const hasSweepUpdates = sweepFields.some((field) => data[field] !== undefined);
+  if (hasSweepUpdates) {
+    const current = await getSweepSettings();
     if (data.sweepTargetAddress !== undefined) current.targetAddress = data.sweepTargetAddress;
     if (data.sweepGasPoolPrivateKey !== undefined) {
       current.gasPoolPrivateKey = data.sweepGasPoolPrivateKey || null;

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UBadge } from "#components";
+
 definePageMeta({
   middleware: ["auth"],
 });
@@ -13,6 +15,39 @@ const showConfirm = ref(false);
 const showDetail = ref(false);
 const detailTask = ref<any>(null);
 const loadingDetail = ref(false);
+
+const columns = [
+  {
+    accessorKey: "status",
+    header: "状态",
+    cell: ({ row }: any) => {
+      const status = row.original.status;
+      const colors: Record<string, "info" | "success" | "error" | "warning"> = {
+        running: "info",
+        done: "success",
+        failed: "error",
+        interrupted: "warning",
+      };
+      return h(UBadge, { color: colors[status] || "neutral" }, () => status);
+    },
+  },
+  {
+    accessorKey: "totalAmount",
+    header: "归集总额",
+    cell: ({ row }: any) => (row.original.totalAmount / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "startedAt",
+    header: "开始时间",
+    cell: ({ row }: any) => formatDate(row.original.startedAt),
+  },
+  {
+    accessorKey: "finishedAt",
+    header: "完成时间",
+    cell: ({ row }: any) => (row.original.finishedAt ? formatDate(row.original.finishedAt) : "-"),
+  },
+  { id: "actions", header: "操作" },
+];
 
 async function fetch() {
   loading.value = true;
@@ -65,56 +100,13 @@ onMounted(fetch);
 
     <template #body>
       <div class="p-6">
-        <UTable
-          v-if="!loading && tasks.length > 0"
-          :data="tasks"
-          :columns="[
-            {
-              accessorKey: 'status',
-              header: '状态',
-              cell: ({ row }: any) => {
-                const status = row.original.status;
-                const colors: Record<string, string> = {
-                  running: 'info',
-                  done: 'success',
-                  failed: 'error',
-                  interrupted: 'warning',
-                };
-                return h(
-                  resolveComponent('UBadge'),
-                  { color: colors[status] || 'neutral' },
-                  () => status,
-                );
-              },
-            },
-            {
-              accessorKey: 'totalAmount',
-              header: '归集总额',
-              cell: ({ row }: any) => (row.original.totalAmount / 1_000_000).toFixed(6) + ' USDT',
-            },
-            {
-              accessorKey: 'startedAt',
-              header: '开始时间',
-              cell: ({ row }: any) => formatDate(row.original.startedAt),
-            },
-            {
-              accessorKey: 'finishedAt',
-              header: '完成时间',
-              cell: ({ row }: any) =>
-                row.original.finishedAt ? formatDate(row.original.finishedAt) : '-',
-            },
-            { id: 'actions', header: '操作' },
-          ]"
-        >
+        <UTable v-if="!loading && tasks.length > 0" :data="tasks" :columns="columns">
           <template #actions-cell="{ row }">
             <UButton size="xs" @click="viewDetail(row.original.id)">详情</UButton>
           </template>
         </UTable>
 
-        <div v-else-if="loading" class="space-y-2">
-          <USkeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-        </div>
-        <div v-else class="text-center text-muted-foreground py-12">暂无归集任务</div>
+        <AdminTableState v-else :loading="loading" empty-message="暂无归集任务" />
       </div>
     </template>
   </UDashboardPanel>

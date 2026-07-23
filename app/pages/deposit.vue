@@ -77,6 +77,35 @@ const recordsLoading = ref(false);
 const showDetail = ref(false);
 const detailItem = ref<any>(null);
 
+const columns = [
+  {
+    accessorKey: "amount",
+    header: "金额",
+    cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "feeRateBps",
+    header: "手续费率",
+    cell: ({ row }: any) => (row.original.feeRateBps / 100).toFixed(2) + "%",
+  },
+  {
+    accessorKey: "feeAmount",
+    header: "手续费",
+    cell: ({ row }: any) => (row.original.feeAmount / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "creditAmount",
+    header: "到账",
+    cell: ({ row }: any) => (row.original.creditAmount / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "createdAt",
+    header: "时间",
+    cell: ({ row }: any) => formatDate(row.original.createdAt),
+  },
+  { id: "actions", header: "操作" },
+];
+
 async function fetchRecords() {
   recordsLoading.value = true;
   try {
@@ -172,39 +201,7 @@ onUnmounted(() => {
 
         <!-- 充值记录 -->
         <div v-else>
-          <UTable
-            v-if="!recordsLoading && items.length > 0"
-            :data="items"
-            :columns="[
-              {
-                accessorKey: 'amount',
-                header: '金额',
-                cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + ' USDT',
-              },
-              {
-                accessorKey: 'feeRateBps',
-                header: '手续费率',
-                cell: ({ row }: any) => (row.original.feeRateBps / 100).toFixed(2) + '%',
-              },
-              {
-                accessorKey: 'feeAmount',
-                header: '手续费',
-                cell: ({ row }: any) => (row.original.feeAmount / 1_000_000).toFixed(6) + ' USDT',
-              },
-              {
-                accessorKey: 'creditAmount',
-                header: '到账',
-                cell: ({ row }: any) =>
-                  (row.original.creditAmount / 1_000_000).toFixed(6) + ' USDT',
-              },
-              {
-                accessorKey: 'createdAt',
-                header: '时间',
-                cell: ({ row }: any) => formatDate(row.original.createdAt),
-              },
-              { id: 'actions', header: '操作' },
-            ]"
-          >
+          <UTable v-if="!recordsLoading && items.length > 0" :data="items" :columns="columns">
             <template #actions-cell="{ row }">
               <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
             </template>

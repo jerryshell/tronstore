@@ -10,6 +10,69 @@ import type {
   SessionData,
 } from "../../shared/types";
 
+// === Pagination Helpers ===
+
+interface PaginatedResult<T> {
+  items: T[];
+  cursor: string | null;
+}
+
+/**
+ * Paginate by a pre-fetched list of IDs.
+ */
+async function paginateByIds<T>(
+  ids: string[],
+  fetcher: (id: string) => Promise<T | null>,
+  limit: number,
+  cursor?: string,
+): Promise<PaginatedResult<T>> {
+  const sorted = [...ids].sort().reverse();
+  let startIdx = 0;
+  if (cursor) {
+    const pos = sorted.indexOf(cursor);
+    if (pos >= 0) startIdx = pos + 1;
+  }
+  const pageIds = sorted.slice(startIdx, startIdx + limit);
+  const items: T[] = [];
+  for (const id of pageIds) {
+    const item = await fetcher(id);
+    if (item) items.push(item);
+  }
+  return {
+    items,
+    cursor: sorted.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
+  };
+}
+
+/**
+ * Paginate by keys from storage.
+ */
+async function paginateByKeys<T extends { id: string }>(
+  keys: string[],
+  fetcher: (key: string) => Promise<T | null>,
+  limit: number,
+  cursor?: string,
+  cursorToKey?: (cursor: string) => string,
+): Promise<PaginatedResult<T>> {
+  const sorted = [...keys].sort().reverse();
+  let startIdx = 0;
+  if (cursor) {
+    const key = cursorToKey ? cursorToKey(cursor) : cursor;
+    const pos = sorted.indexOf(key);
+    if (pos >= 0) startIdx = pos + 1;
+  }
+  const pageKeys = sorted.slice(startIdx, startIdx + limit);
+  const items: T[] = [];
+  for (const key of pageKeys) {
+    const item = await fetcher(key);
+    if (item) items.push(item);
+  }
+  return {
+    items,
+    cursor: sorted.length > startIdx + limit ? (items[items.length - 1]?.id ?? null) : null,
+  };
+}
+
 function us(_id: string) {
   return useStorage("users");
 }
@@ -129,57 +192,20 @@ export async function listDepositsByUser(
   userId: string,
   limit = 50,
   cursor?: string,
-): Promise<{ items: Deposit[]; cursor: string | null }> {
+): Promise<PaginatedResult<Deposit>> {
   const ids = ((await ds("deposits").getItem(`deposit:user:${userId}`)) as string[]) || [];
-  ids.sort().reverse(); // newest first
-
-  let startIdx = 0;
-  if (cursor) {
-    const pos = ids.indexOf(cursor);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageIds = ids.slice(startIdx, startIdx + limit);
-  const items: Deposit[] = [];
-  for (const id of pageIds) {
-    const d = await getDeposit(id);
-    if (d) items.push(d);
-  }
-
-  return {
-    items,
-    cursor: ids.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
-  };
+  return paginateByIds(ids, getDeposit, limit, cursor);
 }
 
 export async function listAllDeposits(
   limit = 50,
   cursor?: string,
-): Promise<{ items: Deposit[]; cursor: string | null }> {
+): Promise<PaginatedResult<Deposit>> {
   const keys = await ds("deposits").getKeys("deposit:");
   const depositIds = keys
     .filter((k) => !k.includes(":event:") && !k.includes(":user:"))
-    .map((k) => k.replace("deposit:", ""))
-    .sort()
-    .reverse(); // newest first
-
-  let startIdx = 0;
-  if (cursor) {
-    const pos = depositIds.indexOf(cursor);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageIds = depositIds.slice(startIdx, startIdx + limit);
-  const items: Deposit[] = [];
-  for (const id of pageIds) {
-    const d = await getDeposit(id);
-    if (d) items.push(d);
-  }
-
-  return {
-    items,
-    cursor: depositIds.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
-  };
+    .map((k) => k.replace("deposit:", ""));
+  return paginateByIds(depositIds, getDeposit, limit, cursor);
 }
 
 // === Ledger ===
@@ -202,27 +228,9 @@ export async function listLedgerByUser(
   userId: string,
   limit = 50,
   cursor?: string,
-): Promise<{ items: LedgerEntry[]; cursor: string | null }> {
+): Promise<PaginatedResult<LedgerEntry>> {
   const ids = ((await ls("ledger").getItem(`entry:user:${userId}`)) as string[]) || [];
-  ids.sort().reverse(); // newest first
-
-  let startIdx = 0;
-  if (cursor) {
-    const pos = ids.indexOf(cursor);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageIds = ids.slice(startIdx, startIdx + limit);
-  const items: LedgerEntry[] = [];
-  for (const id of pageIds) {
-    const e = await getLedgerEntry(id);
-    if (e) items.push(e);
-  }
-
-  return {
-    items,
-    cursor: ids.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
-  };
+  return paginateByIds(ids, getLedgerEntry, limit, cursor);
 }
 
 // === Products ===
@@ -243,28 +251,15 @@ export async function deleteProduct(id: string): Promise<void> {
   await ps("products").removeItem(`product:${id}`);
 }
 
-export async function listProducts(
-  limit = 50,
-  cursor?: string,
-): Promise<{ items: Product[]; cursor: string | null }> {
-  const keys = (await ps("products").getKeys("product:")).sort().reverse();
-  let startIdx = 0;
-  if (cursor) {
-    const pos = keys.indexOf(`product:${cursor}`);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageKeys = keys.slice(startIdx, startIdx + limit);
-  const items: Product[] = [];
-  for (const key of pageKeys) {
-    const p = (await ps("products").getItem(key)) as Product | null;
-    if (p) items.push(p);
-  }
-
-  return {
-    items,
-    cursor: keys.length > startIdx + limit ? (items[items.length - 1]?.id ?? null) : null,
-  };
+export async function listProducts(limit = 50, cursor?: string): Promise<PaginatedResult<Product>> {
+  const keys = await ps("products").getKeys("product:");
+  return paginateByKeys(
+    keys,
+    async (key) => (await ps("products").getItem(key)) as Product | null,
+    limit,
+    cursor,
+    (id) => `product:${id}`,
+  );
 }
 
 // === Orders ===
@@ -292,54 +287,20 @@ export async function listOrdersByUser(
   userId: string,
   limit = 50,
   cursor?: string,
-): Promise<{ items: Order[]; cursor: string | null }> {
+): Promise<PaginatedResult<Order>> {
   const ids = ((await os("orders").getItem(`order:user:${userId}`)) as string[]) || [];
-  ids.sort().reverse(); // newest first
-
-  let startIdx = 0;
-  if (cursor) {
-    const pos = ids.indexOf(cursor);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageIds = ids.slice(startIdx, startIdx + limit);
-  const items: Order[] = [];
-  for (const id of pageIds) {
-    const o = await getOrder(id);
-    if (o) items.push(o);
-  }
-
-  return {
-    items,
-    cursor: ids.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
-  };
+  return paginateByIds(ids, getOrder, limit, cursor);
 }
 
-export async function listAllOrders(
-  limit = 50,
-  cursor?: string,
-): Promise<{ items: Order[]; cursor: string | null }> {
-  const keys = (await os("orders").getKeys("order:"))
-    .filter((k) => !k.includes(":user:"))
-    .sort()
-    .reverse();
-  let startIdx = 0;
-  if (cursor) {
-    const pos = keys.indexOf(`order:${cursor}`);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageKeys = keys.slice(startIdx, startIdx + limit);
-  const items: Order[] = [];
-  for (const key of pageKeys) {
-    const o = (await os("orders").getItem(key)) as Order | null;
-    if (o) items.push(o);
-  }
-
-  return {
-    items,
-    cursor: keys.length > startIdx + limit ? (items[items.length - 1]?.id ?? null) : null,
-  };
+export async function listAllOrders(limit = 50, cursor?: string): Promise<PaginatedResult<Order>> {
+  const keys = (await os("orders").getKeys("order:")).filter((k) => !k.includes(":user:"));
+  return paginateByKeys(
+    keys,
+    async (key) => (await os("orders").getItem(key)) as Order | null,
+    limit,
+    cursor,
+    (id) => `order:${id}`,
+  );
 }
 
 // === Sweeps ===
@@ -359,25 +320,15 @@ export async function updateSweepTask(task: SweepTask): Promise<void> {
 export async function listSweepTasks(
   limit = 50,
   cursor?: string,
-): Promise<{ items: SweepTask[]; cursor: string | null }> {
-  const keys = (await ss("sweeps").getKeys("sweep:")).sort().reverse();
-  let startIdx = 0;
-  if (cursor) {
-    const pos = keys.indexOf(`sweep:${cursor}`);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-
-  const pageKeys = keys.slice(startIdx, startIdx + limit);
-  const items: SweepTask[] = [];
-  for (const key of pageKeys) {
-    const t = (await ss("sweeps").getItem(key)) as SweepTask | null;
-    if (t) items.push(t);
-  }
-
-  return {
-    items,
-    cursor: keys.length > startIdx + limit ? (items[items.length - 1]?.id ?? null) : null,
-  };
+): Promise<PaginatedResult<SweepTask>> {
+  const keys = await ss("sweeps").getKeys("sweep:");
+  return paginateByKeys(
+    keys,
+    async (key) => (await ss("sweeps").getItem(key)) as SweepTask | null,
+    limit,
+    cursor,
+    (id) => `sweep:${id}`,
+  );
 }
 
 // === Settings ===

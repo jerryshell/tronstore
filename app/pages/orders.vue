@@ -11,6 +11,21 @@ const loading = ref(true);
 const showDetail = ref(false);
 const detailOrder = ref<any>(null);
 
+const columns = [
+  { accessorKey: "productSnapshot.name", header: "商品" },
+  {
+    accessorKey: "price",
+    header: "金额",
+    cell: ({ row }: any) => (row.original.price / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "createdAt",
+    header: "时间",
+    cell: ({ row }: any) => formatDate(row.original.createdAt),
+  },
+  { id: "actions", header: "操作" },
+];
+
 async function fetch() {
   loading.value = true;
   try {
@@ -37,24 +52,7 @@ onMounted(fetch);
 
     <template #body>
       <div class="p-6">
-        <UTable
-          v-if="!loading && orders.length > 0"
-          :data="orders"
-          :columns="[
-            { accessorKey: 'productSnapshot.name', header: '商品' },
-            {
-              accessorKey: 'price',
-              header: '金额',
-              cell: ({ row }: any) => (row.original.price / 1_000_000).toFixed(6) + ' USDT',
-            },
-            {
-              accessorKey: 'createdAt',
-              header: '时间',
-              cell: ({ row }: any) => formatDate(row.original.createdAt),
-            },
-            { id: 'actions', header: '操作' },
-          ]"
-        >
+        <UTable v-if="!loading && orders.length > 0" :data="orders" :columns="columns">
           <template #actions-cell="{ row }">
             <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
           </template>

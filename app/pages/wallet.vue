@@ -14,6 +14,30 @@ const detailItem = ref<any>(null);
 const detailData = ref<any>(null);
 const loadingDetail = ref(false);
 
+const columns = [
+  {
+    accessorKey: "type",
+    header: "类型",
+    cell: ({ row }: any) => (row.original.type === "deposit" ? "充值" : "购买"),
+  },
+  {
+    accessorKey: "amount",
+    header: "金额",
+    cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "balanceAfter",
+    header: "余额",
+    cell: ({ row }: any) => (row.original.balanceAfter / 1_000_000).toFixed(6),
+  },
+  {
+    accessorKey: "createdAt",
+    header: "时间",
+    cell: ({ row }: any) => formatDate(row.original.createdAt),
+  },
+  { id: "actions", header: "操作" },
+];
+
 async function fetch() {
   loading.value = true;
   try {
@@ -70,33 +94,7 @@ onMounted(fetch);
           <template #header>
             <h2 class="text-lg font-semibold">流水</h2>
           </template>
-          <UTable
-            v-if="!loading && entries.length > 0"
-            :data="entries"
-            :columns="[
-              {
-                accessorKey: 'type',
-                header: '类型',
-                cell: ({ row }: any) => (row.original.type === 'deposit' ? '充值' : '购买'),
-              },
-              {
-                accessorKey: 'amount',
-                header: '金额',
-                cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + ' USDT',
-              },
-              {
-                accessorKey: 'balanceAfter',
-                header: '余额',
-                cell: ({ row }: any) => (row.original.balanceAfter / 1_000_000).toFixed(6),
-              },
-              {
-                accessorKey: 'createdAt',
-                header: '时间',
-                cell: ({ row }: any) => formatDate(row.original.createdAt),
-              },
-              { id: 'actions', header: '操作' },
-            ]"
-          >
+          <UTable v-if="!loading && entries.length > 0" :data="entries" :columns="columns">
             <template #actions-cell="{ row }">
               <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
             </template>

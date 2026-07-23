@@ -20,6 +20,10 @@ const adminStats = ref<{
 const loadingStats = ref(true);
 
 onMounted(async () => {
+  // 直接刷新时 auth 可能仍在加载，等待首次检查完成
+  if (auth.loading.value) {
+    await until(auth.loading).toBe(false);
+  }
   if (auth.isAdmin.value) {
     try {
       adminStats.value = await $fetch("/api/admin/stats");
@@ -59,32 +63,15 @@ onMounted(async () => {
             <USkeleton class="h-32 rounded-lg" />
           </div>
           <div v-else-if="adminStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <UCard>
-              <template #header>
-                <h2 class="text-lg font-semibold">用户总数</h2>
-              </template>
-              <div class="text-3xl font-bold">{{ adminStats.userCount }}</div>
-            </UCard>
-            <UCard>
-              <template #header>
-                <h2 class="text-lg font-semibold">充值笔数</h2>
-              </template>
-              <div class="text-3xl font-bold">{{ adminStats.depositCount }}</div>
-            </UCard>
-            <UCard>
-              <template #header>
-                <h2 class="text-lg font-semibold">订单总数</h2>
-              </template>
-              <div class="text-3xl font-bold">{{ adminStats.orderCount }}</div>
-            </UCard>
-            <UCard>
-              <template #header>
-                <h2 class="text-lg font-semibold">平台总余额</h2>
-              </template>
-              <div class="text-3xl font-bold text-primary">
-                {{ (adminStats.totalBalance / 1_000_000).toFixed(6) }} USDT
-              </div>
-            </UCard>
+            <StatsCard title="用户总数" :value="adminStats.userCount" />
+            <StatsCard title="充值笔数" :value="adminStats.depositCount" />
+            <StatsCard title="订单总数" :value="adminStats.orderCount" />
+            <StatsCard
+              title="平台总余额"
+              :value="adminStats.totalBalance"
+              :is-amount="true"
+              :highlight="true"
+            />
           </div>
         </template>
       </div>

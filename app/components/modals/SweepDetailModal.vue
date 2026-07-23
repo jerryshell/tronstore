@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { UBadge } from "#components";
+
 const { formatDate } = useTimezone();
 
 defineProps<{
@@ -47,18 +49,17 @@ const open = defineModel<boolean>("open", { required: true });
                 header: '状态',
                 cell: ({ row }: any) => {
                   const s = row.original.status;
-                  const colors: Record<string, string> = {
+                  const colors: Record<
+                    string,
+                    'neutral' | 'info' | 'success' | 'error' | 'warning'
+                  > = {
                     pending: 'neutral',
                     gas_sent: 'info',
                     done: 'success',
                     failed: 'error',
                     skipped: 'warning',
                   };
-                  return h(
-                    resolveComponent('UBadge'),
-                    { color: colors[s] || 'neutral', variant: 'soft' },
-                    () => s,
-                  );
+                  return h(UBadge, { color: colors[s] || 'neutral', variant: 'soft' }, () => s);
                 },
               },
               {

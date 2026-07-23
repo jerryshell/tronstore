@@ -22,6 +22,35 @@ const detailUser = ref<User | null>(null);
 const showAddressDetail = ref(false);
 const selectedAddress = ref<string>("");
 
+const columns = [
+  { accessorKey: "email", header: "邮箱" },
+  { accessorKey: "role", header: "角色" },
+  {
+    accessorKey: "balance",
+    header: "余额",
+    cell: ({ row }: any) => (row.original.balance / 1_000_000).toFixed(6) + " USDT",
+  },
+  {
+    accessorKey: "depositAddress",
+    header: "充值地址",
+    id: "depositAddress",
+  },
+  {
+    accessorKey: "feeRateBps",
+    header: "费率",
+    cell: ({ row }: any) => {
+      const bps = row.original.feeRateBps;
+      return bps != null ? ((bps / 10000) * 100).toFixed(2) + "%" : "默认";
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: "注册时间",
+    cell: ({ row }: any) => formatDate(row.original.createdAt),
+  },
+  { id: "actions", header: "操作" },
+];
+
 async function fetch() {
   loading.value = true;
   try {
@@ -78,38 +107,7 @@ onMounted(fetch);
 
     <template #body>
       <div class="p-6">
-        <UTable
-          v-if="!loading && users.length > 0"
-          :data="users"
-          :columns="[
-            { accessorKey: 'email', header: '邮箱' },
-            { accessorKey: 'role', header: '角色' },
-            {
-              accessorKey: 'balance',
-              header: '余额',
-              cell: ({ row }: any) => (row.original.balance / 1_000_000).toFixed(6) + ' USDT',
-            },
-            {
-              accessorKey: 'depositAddress',
-              header: '充值地址',
-              id: 'depositAddress',
-            },
-            {
-              accessorKey: 'feeRateBps',
-              header: '费率',
-              cell: ({ row }: any) => {
-                const bps = row.original.feeRateBps;
-                return bps != null ? ((bps / 10000) * 100).toFixed(2) + '%' : '默认';
-              },
-            },
-            {
-              accessorKey: 'createdAt',
-              header: '注册时间',
-              cell: ({ row }: any) => formatDate(row.original.createdAt),
-            },
-            { id: 'actions', header: '操作' },
-          ]"
-        >
+        <UTable v-if="!loading && users.length > 0" :data="users" :columns="columns">
           <template #actions-cell="{ row }">
             <UButton size="xs" @click="viewDetail(row.original.id)">详情</UButton>
           </template>
@@ -146,10 +144,7 @@ onMounted(fetch);
           </template>
         </UTable>
 
-        <div v-else-if="loading" class="space-y-2">
-          <USkeleton v-for="i in 5" :key="i" class="h-12 w-full" />
-        </div>
-        <div v-else class="text-center text-muted-foreground py-12">暂无用户</div>
+        <AdminTableState v-else :loading="loading" empty-message="暂无用户" />
       </div>
     </template>
   </UDashboardPanel>

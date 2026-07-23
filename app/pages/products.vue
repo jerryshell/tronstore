@@ -76,18 +76,12 @@ onMounted(fetch);
           v-if="!loading && products.length > 0"
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         >
-          <UCard v-for="product in products" :key="product.id">
-            <template #header>
-              <h3 class="font-semibold">{{ product.name }}</h3>
-            </template>
-            <p class="text-sm text-muted-foreground mb-4">{{ product.description }}</p>
-            <div class="flex items-center justify-between">
-              <span class="text-lg font-bold text-primary">
-                {{ (product.price / 1_000_000).toFixed(6) }} USDT
-              </span>
-              <UButton @click="confirmBuy(product)">购买</UButton>
-            </div>
-          </UCard>
+          <ProductsProductCard
+            v-for="product in products"
+            :key="product.id"
+            :product="product"
+            @buy="confirmBuy"
+          />
         </div>
 
         <div v-else-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
