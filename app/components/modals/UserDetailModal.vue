@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { User } from "~~/shared/types";
+import type { User } from "../../../shared/types";
 
 const { formatDate } = useTimezone();
 const { copy, copied } = useClipboard();

@@ -1,4 +1,4 @@
-import type { User } from "~~/shared/types";
+import type { User } from "../../shared/types";
 
 export function useAuth() {
   const router = useRouter();
