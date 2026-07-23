@@ -175,18 +175,12 @@ function formatTime(timestamp: number) {
                     {
                       accessorKey: 'from',
                       header: '发送方',
-                      cell: ({ row }: any) => {
-                        const addr = row.original.from;
-                        return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '-';
-                      },
+                      cell: ({ row }: any) => row.original.from || '-',
                     },
                     {
                       accessorKey: 'to',
                       header: '接收方',
-                      cell: ({ row }: any) => {
-                        const addr = row.original.to;
-                        return addr ? addr.slice(0, 6) + '...' + addr.slice(-4) : '-';
-                      },
+                      cell: ({ row }: any) => row.original.to || '-',
                     },
                     {
                       accessorKey: 'blockTimestamp',

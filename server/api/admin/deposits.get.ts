@@ -1,9 +1,25 @@
 import { requireAdmin } from "../../utils/auth";
 import { parsePagination } from "../../utils/admin-query";
-import { listAllDeposits } from "../../utils/storage";
+import { listAllDeposits, getUser } from "../../utils/storage";
 
 export default defineEventHandler(async (event) => {
   await requireAdmin(event);
   const { limit, cursor } = parsePagination(getQuery(event));
-  return await listAllDeposits(limit, cursor);
+  const result = await listAllDeposits(limit, cursor);
+
+  // 获取用户邮箱
+  const items = await Promise.all(
+    result.items.map(async (deposit) => {
+      const user = await getUser(deposit.userId);
+      return {
+        ...deposit,
+        userEmail: user?.email || "未知",
+      };
+    }),
+  );
+
+  return {
+    items,
+    cursor: result.cursor,
+  };
 });

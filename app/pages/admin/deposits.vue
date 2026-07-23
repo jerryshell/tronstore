@@ -53,6 +53,7 @@ onMounted(() => fetch());
           v-if="!loading && deposits.length > 0"
           :data="deposits"
           :columns="[
+            { accessorKey: 'userEmail', header: '用户邮箱' },
             { accessorKey: 'userId', header: '用户ID' },
             {
               accessorKey: 'amount',
