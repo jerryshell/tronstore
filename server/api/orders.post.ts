@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     const now = Date.now();
     const orderId = v7();
 
-    // Create order
+    // 创建订单
     await createOrder({
       id: orderId,
       userId: user.id,
@@ -54,10 +54,10 @@ export default defineEventHandler(async (event) => {
       createdAt: now,
     });
 
-    // Deduct balance
+    // 扣减余额
     const updatedUser = await updateUserBalance(user.id, -product.price);
 
-    // Create ledger entry
+    // 创建流水
     await createLedgerEntry({
       id: v7(),
       userId: user.id,

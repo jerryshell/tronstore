@@ -13,17 +13,17 @@ export default defineNitroPlugin(async () => {
     const conn = await getTronechoNatsConnection(config.tronechoNatsUrl);
     logger.info("Tronecho NATS已连接");
 
-    // Sync all addresses on startup
+    // 启动时同步所有地址
     await syncAllAddresses();
 
-    // Start JetStream consumer
+    // 启动 JetStream 消费者
     await startNatsSubscription(conn, config.tronechoPrefix);
     logger.info("Tronecho JetStream 消费者已启动");
   } catch (error) {
     logger.error("Tronecho NATS 连接失败", { error: String(error) });
   }
 
-  // Session cleanup timer (every 30 minutes)
+  // 每 30 分钟清理过期会话
   setInterval(
     async () => {
       try {

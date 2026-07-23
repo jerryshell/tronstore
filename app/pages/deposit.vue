@@ -9,10 +9,6 @@ const toast = useToast();
 const { copy, copied } = useCopyToast();
 const { formatDate } = useTimezone();
 
-watch(copied, (val) => {
-  if (val) toast.add({ title: "地址已复制", color: "success" });
-});
-
 function copyAddress() {
   if (!address.value) return;
   copy(address.value).catch(() => {

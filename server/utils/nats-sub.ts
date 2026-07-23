@@ -97,7 +97,7 @@ async function consumeEvents(prefix: string) {
     }
   }
 
-  // Immediately continue pulling next batch
+  // 立即继续拉取下一批
   if (running) {
     consumeEvents(prefix);
   }
@@ -118,7 +118,7 @@ async function processTransferEvent(event: TronechoTransfer) {
 
   if (!isValidTransfer(event)) return;
 
-  // Dedup check
+  // 去重检查
   const existing = await getDepositByEventId(event.id);
   if (existing) {
     logger.warn("重复事件，跳过", { eventId: event.id });
@@ -131,10 +131,10 @@ async function processTransferEvent(event: TronechoTransfer) {
     return;
   }
 
-  // Acquire per-user lock for this operation
+  // 获取用户锁
   const release = await acquireUserLock(user.id);
   try {
-    // Re-read user after lock acquisition to ensure balance consistency
+    // 锁获取后重新读取用户，确保余额一致性
     const { getUser } = await import("./storage");
     const freshUser = await getUser(user.id);
     if (!freshUser) return;
@@ -145,7 +145,7 @@ async function processTransferEvent(event: TronechoTransfer) {
       return;
     }
 
-    // Determine fee rate: user-specific or system default
+    // 确定费率：用户自定义或系统默认
     const settings = await getSystemSettings();
     const feeRateBps = freshUser.feeRateBps ?? settings.defaultFeeRateBps;
     const feeAmount = Math.floor((amount * feeRateBps) / 10000);
@@ -162,7 +162,7 @@ async function processTransferEvent(event: TronechoTransfer) {
     const depositId = v7();
     const now = Date.now();
 
-    // Create deposit
+    // 创建充值记录
     await createDeposit({
       id: depositId,
       userId: freshUser.id,
@@ -182,10 +182,10 @@ async function processTransferEvent(event: TronechoTransfer) {
       createdAt: now,
     });
 
-    // Update balance
+    // 更新余额
     const updatedUser = await updateUserBalance(freshUser.id, creditAmount);
 
-    // Create ledger entry
+    // 创建流水
     await createLedgerEntry({
       id: v7(),
       userId: freshUser.id,

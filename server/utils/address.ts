@@ -5,29 +5,25 @@ import { registerAddress } from "./tronecho";
 import { acquireUserLock } from "./user-lock";
 import { logger } from "./logger";
 
-/**
- * Ensure a user has a deposit address allocated.
- * Idempotent — if the user already has an address, returns immediately.
- * Must be called within the per-user lock.
- */
+// 确保用户已分配充值地址，幂等操作（已有地址则立即返回）
 export async function ensureDepositAddress(userId: string): Promise<string> {
   const user = await getUser(userId);
   if (!user) throw new Error("User not found");
 
-  // Already has address — return immediately
+  // 已有地址，直接返回
   if (user.depositAddress) {
     return user.depositAddress;
   }
 
-  // Keygen with MPC — let mpcium generate the walletId
+  // MPC 密钥生成，让 mpcium 自动生成 walletId
   logger.info("开始MPC keygen", { userId });
   const result = await createMpcWallet();
   const mpcWalletId = result.mpcWalletId;
 
-  // Derive address from public key
+  // 从公钥推导 Tron 地址
   const address = publicKeyToTronAddress(result.ecdsaPubKey);
 
-  // Store wallet info
+  // 存储钱包信息
   const freshUser = await getUser(userId);
   if (freshUser) {
     freshUser.mpcWalletId = mpcWalletId;
@@ -37,7 +33,7 @@ export async function ensureDepositAddress(userId: string): Promise<string> {
     await updateUser(freshUser);
   }
 
-  // Update address index (must be done via updateUserAddress)
+  // 更新地址索引
   await updateUserAddress(userId, address);
 
   const registered = await registerAddress(address, user.email);
@@ -49,9 +45,7 @@ export async function ensureDepositAddress(userId: string): Promise<string> {
   return address;
 }
 
-/**
- * Wrapper that acquires the per-user lock before ensuring address.
- */
+// 获取用户锁后分配地址的包装
 export async function ensureDepositAddressWithLock(userId: string): Promise<string> {
   const release = await acquireUserLock(userId);
   try {

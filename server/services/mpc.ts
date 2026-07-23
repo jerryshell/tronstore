@@ -126,8 +126,8 @@ export async function createMpcWallet(): Promise<{
 
   logger.info("开始创建MPC钱包");
 
-  // Don't pass walletId — let mpcium generate it.
-  // Passing a custom walletId causes mpcium to return an incorrect public key.
+  // 不传 walletId，让 mpcium 自动生成
+  // 手动传会导致 mpcium 返回错误的公钥
   const createdId = await client.createWallet();
   logger.info("钱包创建请求已发送", { walletId: createdId });
 

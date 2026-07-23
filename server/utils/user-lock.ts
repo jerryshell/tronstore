@@ -2,11 +2,7 @@ import { logger } from "./logger";
 
 const userLocks = new Map<string, Promise<void>>();
 
-/**
- * Acquire a per-user lock to serialize balance-critical operations.
- * Returns a release function. Hard timeout 120s - if the lock chain
- * stalls, we force-release and log an error.
- */
+// 获取用户级锁，序列化余额相关操作，返回 release 函数。硬超时 120 秒
 export async function acquireUserLock(userId: string): Promise<() => void> {
   let waited = false;
 

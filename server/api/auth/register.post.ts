@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const email = requireValidEmail(rawEmail);
   requireValidPassword(password);
 
-  // Check if email already exists
+  // 检查邮箱是否已被注册
   const existing = await getUserByEmail(email);
   if (existing) {
     throw createError({ statusCode: 409, message: "邮箱已被注册" });
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
   const release = await acquireRegistrationLock();
   try {
-    // Determine role: first user = admin
+    // 判断角色：首个用户为管理员
     const userCount = await countUsers();
     const role: "admin" | "user" = userCount === 0 ? "admin" : "user";
 
@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
 
     logger.info("用户注册成功", { userId, email, role });
 
-    // Create session
+    // 创建会话
     await createSessionCookie(event, userId);
 
     return toPublicUser(user);

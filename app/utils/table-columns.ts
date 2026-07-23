@@ -1,5 +1,3 @@
-const { formatDate } = useTimezone();
-
 export function useAmountColumn(header = "金额") {
   return {
     accessorKey: "amount",
@@ -9,6 +7,7 @@ export function useAmountColumn(header = "金额") {
 }
 
 export function useDateColumn(accessorKey = "createdAt", header = "时间") {
+  const { formatDate } = useTimezone();
   return {
     accessorKey,
     header,

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const { oldPassword, newPassword } = await parseBody(event, passwordSchema);
 
-  // Validate new password
+  // 校验新密码
   requireValidPassword(newPassword);
 
   const user = await getUser(authUser.id);
@@ -32,23 +32,23 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "用户不存在" });
   }
 
-  // Verify old password
+  // 验证旧密码
   const valid = await verifyPassword(oldPassword, user.passwordHash);
   if (!valid) {
     throw createError({ statusCode: 400, message: "旧密码错误" });
   }
 
-  // Update password
+  // 更新密码
   user.passwordHash = await hashPassword(newPassword);
   user.updatedAt = Date.now();
   await updateUser(user);
 
-  // Invalidate all other sessions (keep current one)
+  // 清除用户所有其他会话（保留当前）
   const currentToken = getCookie(event, "tronstore_session");
-  // Delete all sessions for this user
+  // 删除该用户所有会话
   await deleteUserSessions(user.id);
 
-  // Re-create current session
+  // 重新创建当前会话
   if (currentToken) {
     await destroySession(event);
   }

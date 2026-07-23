@@ -3,10 +3,10 @@ import { runSweep, markInterruptedTasks } from "../services/sweep";
 import { logger } from "../utils/logger";
 
 export default defineNitroPlugin(async () => {
-  // Mark any interrupted tasks on startup
+  // 标记启动前中断的归集任务
   await markInterruptedTasks();
 
-  // Sweep timer: check every minute
+  // 每分钟检查一次归集
   setInterval(async () => {
     try {
       const settings = await getSweepSettings();

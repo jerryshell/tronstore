@@ -9,18 +9,16 @@ import type {
   SweepSettings,
   SessionData,
 } from "../../shared/types";
+import { logger } from "./logger";
 
-// === Pagination Helpers ===
+// === 分页工具 ===
 
 interface PaginatedResult<T> {
   items: T[];
   cursor: string | null;
 }
 
-/**
- * Generic pagination over pre-sorted keys. Handles both ID-based
- * and storage-key-based cursors.
- */
+// 通用游标分页：对预排序的 key 列表进行切片
 async function paginate<T>(
   keys: string[],
   fetcher: (key: string) => Promise<T | null>,
@@ -72,7 +70,7 @@ function ses(_id: string) {
   return useStorage("sessions");
 }
 
-// === Users ===
+// === 用户 ===
 
 export async function getUser(id: string): Promise<User | null> {
   return (await us("users").getItem(`user:${id}`)) as User | null;
@@ -93,6 +91,7 @@ export async function getUserByAddress(address: string): Promise<User | null> {
 export async function createUser(user: User): Promise<void> {
   await us("users").setItem(`user:${user.id}`, user);
   await us("users").setItem(`user:email:${user.email}`, user.id);
+  logger.info("用户已创建", { userId: user.id, email: user.email, role: user.role });
 }
 
 export async function updateUser(user: User): Promise<void> {
@@ -111,9 +110,11 @@ export async function updateUserAddress(userId: string, address: string): Promis
 export async function updateUserBalance(userId: string, delta: number): Promise<User> {
   const user = await getUser(userId);
   if (!user) throw new Error("User not found");
+  const before = user.balance;
   user.balance += delta;
   user.updatedAt = Date.now();
   await us("users").setItem(`user:${user.id}`, user);
+  logger.info("余额变动", { userId, delta, before, after: user.balance });
   return user;
 }
 
@@ -125,7 +126,7 @@ export async function listUsers(): Promise<User[]> {
     const user = (await us("users").getItem(key)) as User | null;
     if (user) result.push(user);
   }
-  result.sort((a, b) => b.createdAt - a.createdAt); // newest first
+  result.sort((a, b) => b.createdAt - a.createdAt); // 最新在前
   return result;
 }
 
@@ -134,7 +135,7 @@ export async function countUsers(): Promise<number> {
   return keys.filter((k) => !k.includes(":email:") && !k.includes(":addr:")).length;
 }
 
-// === Deposits ===
+// === 充值 ===
 
 export async function countDeposits(): Promise<number> {
   const keys = await ds("deposits").getKeys("deposit:");
@@ -160,6 +161,13 @@ export async function createDeposit(deposit: Deposit): Promise<void> {
   existing.push(deposit.id);
   existing.sort();
   await ds("deposits").setItem(key, existing);
+
+  logger.info("充值记录已创建", {
+    depositId: deposit.id,
+    userId: deposit.userId,
+    amount: deposit.amount,
+    creditAmount: deposit.creditAmount,
+  });
 }
 
 export async function listDepositsByUser(
@@ -182,7 +190,7 @@ export async function listAllDeposits(
   return paginate(depositIds, getDeposit, limit, cursor);
 }
 
-// === Ledger ===
+// === 流水 ===
 
 export async function getLedgerEntry(id: string): Promise<LedgerEntry | null> {
   return (await ls("ledger").getItem(`entry:${id}`)) as LedgerEntry | null;
@@ -196,6 +204,13 @@ export async function createLedgerEntry(entry: LedgerEntry): Promise<void> {
   existing.push(entry.id);
   existing.sort();
   await ls("ledger").setItem(key, existing);
+
+  logger.debug("流水已创建", {
+    entryId: entry.id,
+    userId: entry.userId,
+    type: entry.type,
+    amount: entry.amount,
+  });
 }
 
 export async function listLedgerByUser(
@@ -207,7 +222,7 @@ export async function listLedgerByUser(
   return paginate(ids, getLedgerEntry, limit, cursor);
 }
 
-// === Products ===
+// === 商品 ===
 
 export async function getProduct(id: string): Promise<Product | null> {
   return (await ps("products").getItem(`product:${id}`)) as Product | null;
@@ -236,7 +251,7 @@ export async function listProducts(limit = 50, cursor?: string): Promise<Paginat
   );
 }
 
-// === Orders ===
+// === 订单 ===
 
 export async function countOrders(): Promise<number> {
   const keys = await os("orders").getKeys("order:");
@@ -255,6 +270,8 @@ export async function createOrder(order: Order): Promise<void> {
   existing.push(order.id);
   existing.sort();
   await os("orders").setItem(key, existing);
+
+  logger.info("订单已创建", { orderId: order.id, userId: order.userId, price: order.price });
 }
 
 export async function listOrdersByUser(
@@ -277,7 +294,7 @@ export async function listAllOrders(limit = 50, cursor?: string): Promise<Pagina
   );
 }
 
-// === Sweeps ===
+// === 归集 ===
 
 export async function getSweepTask(id: string): Promise<SweepTask | null> {
   return (await ss("sweeps").getItem(`sweep:${id}`)) as SweepTask | null;
@@ -305,7 +322,7 @@ export async function listSweepTasks(
   );
 }
 
-// === Settings ===
+// === 设置 ===
 
 export async function getSystemSettings(): Promise<SystemSettings> {
   const s = (await sts("settings").getItem("system")) as SystemSettings | null;
@@ -316,9 +333,7 @@ export async function setSystemSettings(settings: SystemSettings): Promise<void>
   await sts("settings").setItem("system", settings);
 }
 
-/**
- * Effective fee rate for a user: per-user override or system default.
- */
+// 用户费率：优先使用个人费率，否则用系统默认
 export async function getEffectiveFeeRateBps(user: User): Promise<number> {
   if (user.feeRateBps != null) return user.feeRateBps;
   const settings = await getSystemSettings();
@@ -344,7 +359,7 @@ export async function setSweepSettings(settings: SweepSettings): Promise<void> {
   await sts("settings").setItem("sweep", settings);
 }
 
-// === Sessions ===
+// === 会话 ===
 
 export async function getSessionData(tokenHash: string): Promise<SessionData | null> {
   return (await ses("sessions").getItem(`session:${tokenHash}`)) as SessionData | null;
@@ -379,7 +394,7 @@ export async function cleanupExpiredSessions(): Promise<void> {
   }
 }
 
-// === USDT helpers ===
+// === USDT 工具 ===
 
 export function isUsdtAsset(asset: string, network: "nile" | "mainnet"): boolean {
   const usdtContracts = {

@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const { limit, cursor } = parsePagination(getQuery(event));
   const result = await listAllOrders(limit, cursor);
 
-  // Attach user email to each order
+  // 为每个订单附加用户邮箱
   const items = await Promise.all(
     result.items.map(async (order: any) => {
       const user = await getUser(order.userId);

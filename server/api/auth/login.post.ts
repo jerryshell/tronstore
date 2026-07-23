@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   const { email: rawEmail, password } = await parseBody(event, loginSchema);
   const email = requireValidEmail(rawEmail);
 
-  // Rate limit check
+  // 限流检查
   if (!checkLoginRateLimit(email)) {
     throw createError({ statusCode: 429, message: "登录尝试过多，请 5 分钟后再试" });
   }

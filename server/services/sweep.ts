@@ -58,7 +58,7 @@ async function waitForTransaction(
         return true;
       }
     } catch {
-      // Not found yet
+      // 尚未确认
     }
     delay = Math.min(delay * 2, 30_000);
   }
@@ -343,7 +343,7 @@ export async function runSweep(): Promise<SweepTask | null> {
       threshold: config.settings.threshold,
     });
 
-    // Step 1: Find candidates
+    // 第 1 步：查找候选地址
     const candidates = await findCandidates(config.settings.threshold, config.network);
     if (candidates.length === 0) {
       logger.info("没有地址需要归集，跳过");
@@ -367,7 +367,7 @@ export async function runSweep(): Promise<SweepTask | null> {
     await createSweepTask(task);
     logger.info("找到候选地址", { count: candidates.length });
 
-    // Step 2: Gas pre-check
+    // 第 2 步：预检 Gas
     const { items, totalGasNeeded } = await preCheckGas(candidates, config);
     task.items = items;
 
@@ -383,14 +383,14 @@ export async function runSweep(): Promise<SweepTask | null> {
       return task;
     }
 
-    // Step 3: Refill gas
+    // 第 3 步：补充 Gas
     await processGasRefill(items, config);
 
-    // Step 4: Sweep USDT
+    // 第 4 步：归集 USDT
     const users = await listUsers();
     await processUsdtSweep(items, users, config, task);
 
-    // Step 5: Finalize
+    // 第 5 步：收尾
     const allDone = items.every((i) => i.status === "done" || i.status === "skipped");
     task.status = allDone ? "done" : "failed";
     task.totalAmount = items.reduce((sum, i) => sum + (i.status === "done" ? i.amount : 0), 0);

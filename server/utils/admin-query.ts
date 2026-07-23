@@ -25,9 +25,7 @@ export async function requireAdminWithId(event: any) {
   return id;
 }
 
-/**
- * Read and validate the request body against a zod schema.
- */
+// 读取 body 并用 zod schema 校验，不合法则抛 400
 export async function parseBody<Schema extends z.ZodType>(
   event: H3Event,
   schema: Schema,
@@ -40,17 +38,13 @@ export async function parseBody<Schema extends z.ZodType>(
   return parsed.data;
 }
 
-/**
- * CSRF check + admin auth for mutating admin endpoints.
- */
+// CSRF 校验 + 管理员认证
 export async function requireAdminCsrf(event: H3Event) {
   csrfCheck(event);
   return requireAdmin(event);
 }
 
-/**
- * Get a required router param or throw 400.
- */
+// 获取路由参数，缺失则抛 400
 export function requireParam(event: H3Event, name: string): string {
   const value = getRouterParam(event, name);
   if (!value) throw createError({ statusCode: 400, message: `缺少 ${name}` });
