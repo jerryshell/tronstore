@@ -19,6 +19,8 @@ const users = ref<User[]>([]);
 const loading = ref(true);
 const showDetail = ref(false);
 const detailUser = ref<User | null>(null);
+const showAddressDetail = ref(false);
+const selectedAddress = ref<string>("");
 
 async function fetch() {
   loading.value = true;
@@ -57,6 +59,12 @@ function copyAddress(address: string) {
   copy(address).catch(() => {
     toast.add({ title: "复制失败", color: "error" });
   });
+}
+
+function openAddressDetail(address: string) {
+  if (!address) return;
+  selectedAddress.value = address;
+  showAddressDetail.value = true;
 }
 
 onMounted(fetch);
@@ -107,7 +115,13 @@ onMounted(fetch);
           </template>
           <template #depositAddress-cell="{ row }">
             <div v-if="row.original.depositAddress" class="flex items-center gap-2">
-              <span class="font-mono text-xs">{{ row.original.depositAddress }}</span>
+              <UButton
+                variant="link"
+                class="font-mono text-xs p-0 h-auto"
+                @click="openAddressDetail(row.original.depositAddress)"
+              >
+                {{ row.original.depositAddress }}
+              </UButton>
               <UButton
                 icon="i-lucide-copy"
                 variant="ghost"
@@ -145,4 +159,6 @@ onMounted(fetch);
     :detail-user="detailUser"
     @save-fee-rate="saveFeeRate"
   />
+
+  <ModalsAddressDetailModal v-model:open="showAddressDetail" :address="selectedAddress" />
 </template>
