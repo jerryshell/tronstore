@@ -84,6 +84,14 @@ const adminLinks = computed(() => [
     },
   },
   {
+    label: "充值记录",
+    icon: "i-lucide-wallet",
+    to: "/admin/deposits",
+    onSelect: () => {
+      open.value = false;
+    },
+  },
+  {
     label: "归集任务",
     icon: "i-lucide-arrow-left-right",
     to: "/admin/sweeps",

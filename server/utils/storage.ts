@@ -152,6 +152,36 @@ export async function listDepositsByUser(
   };
 }
 
+export async function listAllDeposits(
+  limit = 50,
+  cursor?: string,
+): Promise<{ items: Deposit[]; cursor: string | null }> {
+  const keys = await ds("deposits").getKeys("deposit:");
+  const depositIds = keys
+    .filter((k) => !k.includes(":event:") && !k.includes(":user:"))
+    .map((k) => k.replace("deposit:", ""))
+    .sort()
+    .reverse(); // newest first
+
+  let startIdx = 0;
+  if (cursor) {
+    const pos = depositIds.indexOf(cursor);
+    if (pos >= 0) startIdx = pos + 1;
+  }
+
+  const pageIds = depositIds.slice(startIdx, startIdx + limit);
+  const items: Deposit[] = [];
+  for (const id of pageIds) {
+    const d = await getDeposit(id);
+    if (d) items.push(d);
+  }
+
+  return {
+    items,
+    cursor: depositIds.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
+  };
+}
+
 // === Ledger ===
 
 export async function getLedgerEntry(id: string): Promise<LedgerEntry | null> {
