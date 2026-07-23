@@ -10,7 +10,7 @@
             size="xs"
             variant="outline"
             icon="i-lucide-external-link"
-            :to="`https://${network === 'mainnet' ? '' : 'nile.'}tronscan.org/#/transaction/${row.original.txId}`"
+            :to="tronscanTxUrl(row.original.txId)"
             target="_blank"
           >
             查看
@@ -30,8 +30,6 @@
 
 <script setup lang="ts">
 const { formatDate } = useTimezone();
-const config = useRuntimeConfig();
-const network = config.public.tronNetwork as string;
 
 const props = defineProps<{
   loading: boolean;

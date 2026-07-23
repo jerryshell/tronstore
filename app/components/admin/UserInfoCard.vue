@@ -45,9 +45,6 @@
 </template>
 
 <script setup lang="ts">
-const config = useRuntimeConfig();
-const tronNetwork = config.public.tronNetwork as string;
-
 const props = defineProps<{
   user: any;
 }>();
@@ -56,8 +53,5 @@ defineEmits<{
   copy: [address: string];
 }>();
 
-const tronscanUrl = computed(() => {
-  const base = tronNetwork === "mainnet" ? "https://tronscan.org" : "https://nile.tronscan.org";
-  return `${base}/#/address/${props.user.depositAddress}`;
-});
+const tronscanUrl = computed(() => tronscanAddressUrl(props.user.depositAddress));
 </script>

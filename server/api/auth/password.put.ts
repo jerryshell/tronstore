@@ -3,12 +3,13 @@ import {
   requireUser,
   hashPassword,
   verifyPassword,
-  validatePassword,
+  requireValidPassword,
   createSessionCookie,
   destroySession,
+  csrfCheck,
 } from "../../utils/auth";
+import { parseBody } from "../../utils/admin-query";
 import { getUser, updateUser, deleteUserSessions } from "../../utils/storage";
-import { csrfCheck } from "../../utils/auth";
 import { logger } from "../../utils/logger";
 
 const passwordSchema = z.object({
@@ -21,19 +22,10 @@ export default defineEventHandler(async (event) => {
 
   const authUser = await requireUser(event);
 
-  const body = await readBody(event);
-  const parsed = passwordSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
-
-  const { oldPassword, newPassword } = parsed.data;
+  const { oldPassword, newPassword } = await parseBody(event, passwordSchema);
 
   // Validate new password
-  const pwResult = validatePassword(newPassword);
-  if (!pwResult.valid) {
-    throw createError({ statusCode: 400, message: pwResult.message });
-  }
+  requireValidPassword(newPassword);
 
   const user = await getUser(authUser.id);
   if (!user) {

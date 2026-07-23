@@ -4,14 +4,10 @@ definePageMeta({
 });
 
 const route = useRoute();
-const { copy, copied } = useClipboard();
 const toast = useToast();
+const { copy, copied } = useCopyToast();
 const { useAmountColumn, useDateColumn, useBalanceColumn, useCreditAmountColumn } =
   await import("~/utils/table-columns");
-
-watch(copied, (val) => {
-  if (val) toast.add({ title: "地址已复制", color: "success" });
-});
 
 const user = ref<any>(null);
 const deposits = ref<any[]>([]);

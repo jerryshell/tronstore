@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { requireAdmin, csrfCheck } from "../../utils/auth";
-import { setSystemSettings, setSweepSettings, getSweepSettings } from "../../utils/storage";
+import { requireAdminCsrf, parseBody } from "../../utils/admin-query";
+import { setSystemSettings } from "../../utils/storage";
+import { applySweepSettings } from "../../services/sweep";
 import { logger } from "../../utils/logger";
 
 const settingsSchema = z.object({
@@ -14,46 +15,14 @@ const settingsSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  csrfCheck(event);
-  await requireAdmin(event);
+  await requireAdminCsrf(event);
+  const data = await parseBody(event, settingsSchema);
 
-  const body = await readBody(event);
-  const parsed = settingsSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
-
-  const data = parsed.data;
-
-  // Update system settings
   if (data.defaultFeeRateBps !== undefined) {
     await setSystemSettings({ defaultFeeRateBps: data.defaultFeeRateBps });
   }
 
-  // Update sweep settings
-  const sweepFields = [
-    "sweepTargetAddress",
-    "sweepGasPoolPrivateKey",
-    "sweepThreshold",
-    "sweepGasTrxAmount",
-    "sweepIntervalMinutes",
-    "sweepEnabled",
-  ] as const;
-
-  const hasSweepUpdates = sweepFields.some((field) => data[field] !== undefined);
-  if (hasSweepUpdates) {
-    const current = await getSweepSettings();
-    if (data.sweepTargetAddress !== undefined) current.targetAddress = data.sweepTargetAddress;
-    if (data.sweepGasPoolPrivateKey !== undefined) {
-      current.gasPoolPrivateKey = data.sweepGasPoolPrivateKey || null;
-    }
-    if (data.sweepThreshold !== undefined) current.threshold = data.sweepThreshold;
-    if (data.sweepGasTrxAmount !== undefined) current.gasTrxAmount = data.sweepGasTrxAmount;
-    if (data.sweepIntervalMinutes !== undefined)
-      current.intervalMinutes = data.sweepIntervalMinutes;
-    if (data.sweepEnabled !== undefined) current.enabled = data.sweepEnabled;
-    await setSweepSettings(current);
-  }
+  await applySweepSettings(data);
 
   logger.info("设置已更新", { updates: Object.keys(data) });
 

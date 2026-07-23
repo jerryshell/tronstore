@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAdmin, csrfCheck } from "../../../utils/auth";
+import { requireAdminCsrf, requireParam, parseBody } from "../../../utils/admin-query";
 import { getUser, updateUser } from "../../../utils/storage";
 import { logger } from "../../../utils/logger";
 
@@ -8,29 +8,21 @@ const patchSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  csrfCheck(event);
-  await requireAdmin(event);
-
-  const id = getRouterParam(event, "id");
-  if (!id) throw createError({ statusCode: 400, message: "缺少 id" });
-
-  const body = await readBody(event);
-  const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
+  await requireAdminCsrf(event);
+  const id = requireParam(event, "id");
+  const data = await parseBody(event, patchSchema);
 
   const user = await getUser(id);
   if (!user) throw createError({ statusCode: 404, message: "用户不存在" });
 
-  if (parsed.data.feeRateBps !== undefined) {
-    user.feeRateBps = parsed.data.feeRateBps;
+  if (data.feeRateBps !== undefined) {
+    user.feeRateBps = data.feeRateBps;
   }
 
   user.updatedAt = Date.now();
   await updateUser(user);
 
-  logger.info("管理员更新用户", { userId: id, updates: parsed.data });
+  logger.info("管理员更新用户", { userId: id, updates: data });
 
   return { ok: true };
 });

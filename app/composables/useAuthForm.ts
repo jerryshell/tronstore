@@ -15,13 +15,26 @@ export function useAuthForm() {
     return true;
   }
 
+  async function submit(action: "login" | "register") {
+    if (!validate()) return;
+
+    loading.value = true;
+    try {
+      await auth[action](email.value, password.value);
+      router.push("/");
+    } catch (error: any) {
+      const fallback = action === "login" ? "登录失败" : "注册失败";
+      toast.add({ title: error.data?.message || fallback, color: "error" });
+    } finally {
+      loading.value = false;
+    }
+  }
+
   return {
-    auth,
-    router,
-    toast,
     email,
     password,
     loading,
     validate,
+    submit,
   };
 }

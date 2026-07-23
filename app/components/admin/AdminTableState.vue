@@ -1,10 +1,10 @@
 <template>
-  <div v-if="loading" class="space-y-2">
-    <USkeleton v-for="i in skeletonCount" :key="i" class="h-12 w-full" />
-  </div>
-  <div v-else class="text-center text-muted-foreground py-12">
-    {{ emptyMessage }}
-  </div>
+  <TableState
+    :loading="loading"
+    :empty-message="emptyMessage"
+    :skeleton-count="skeletonCount"
+    skeleton-class="h-12 w-full"
+  />
 </template>
 
 <script setup lang="ts">

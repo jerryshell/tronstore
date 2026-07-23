@@ -6,8 +6,7 @@ definePageMeta({
 });
 
 const toast = useToast();
-const auth = useAuth();
-const { copy, copied } = useClipboard();
+const { copy, copied } = useCopyToast();
 const { formatDate } = useTimezone();
 
 watch(copied, (val) => {
@@ -71,56 +70,14 @@ watch(address, async (val) => {
 });
 
 // === 充值记录 ===
-const items = ref<any[]>([]);
-const cursor = ref<string | null>(null);
-const recordsLoading = ref(false);
-const showDetail = ref(false);
-const detailItem = ref<any>(null);
+const {
+  items,
+  loading: recordsLoading,
+  fetch: fetchRecords,
+} = useCursorPagination("/api/deposits");
+const { open: showDetail, item: detailItem, show: viewDetail } = useDetailModal();
 
-const columns = [
-  {
-    accessorKey: "amount",
-    header: "金额",
-    cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + " USDT",
-  },
-  {
-    accessorKey: "feeRateBps",
-    header: "手续费率",
-    cell: ({ row }: any) => (row.original.feeRateBps / 100).toFixed(2) + "%",
-  },
-  {
-    accessorKey: "feeAmount",
-    header: "手续费",
-    cell: ({ row }: any) => (row.original.feeAmount / 1_000_000).toFixed(6) + " USDT",
-  },
-  {
-    accessorKey: "creditAmount",
-    header: "到账",
-    cell: ({ row }: any) => (row.original.creditAmount / 1_000_000).toFixed(6) + " USDT",
-  },
-  {
-    accessorKey: "createdAt",
-    header: "时间",
-    cell: ({ row }: any) => formatDate(row.original.createdAt),
-  },
-  { id: "actions", header: "操作" },
-];
-
-async function fetchRecords() {
-  recordsLoading.value = true;
-  try {
-    const data = await $fetch("/api/deposits", { query: { limit: 50, cursor: cursor.value } });
-    items.value = (data as any).items || [];
-    cursor.value = (data as any).cursor;
-  } finally {
-    recordsLoading.value = false;
-  }
-}
-
-function viewDetail(item: any) {
-  detailItem.value = item;
-  showDetail.value = true;
-}
+const columns = [...depositAmountColumns(), dateColumn(formatDate), actionsColumn];
 
 // === Tab 切换 ===
 const activeTab = ref("0");
@@ -201,16 +158,14 @@ onUnmounted(() => {
 
         <!-- 充值记录 -->
         <div v-else>
-          <UTable v-if="!recordsLoading && items.length > 0" :data="items" :columns="columns">
-            <template #actions-cell="{ row }">
-              <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
-            </template>
-          </UTable>
-
-          <div v-else-if="recordsLoading" class="space-y-2">
-            <USkeleton v-for="i in 8" :key="i" class="h-10 w-full" />
-          </div>
-          <div v-else class="text-center text-muted-foreground py-12">暂无充值记录</div>
+          <DataTable
+            :data="items"
+            :columns="columns"
+            :loading="recordsLoading"
+            empty-message="暂无充值记录"
+            :skeleton-count="8"
+            @view="viewDetail"
+          />
         </div>
       </div>
     </template>

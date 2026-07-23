@@ -1,5 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual, createHash } from "node:crypto";
 import type { H3Event } from "h3";
+import type { User } from "../../shared/types";
 import { getSessionData, setSession, deleteSession, getUser } from "./storage";
 
 const SALT_LENGTH = 32;
@@ -119,34 +120,50 @@ export async function requireAdmin(
   return user as { id: string; email: string; role: "admin" };
 }
 
+/**
+ * Require a session and load the full user record (404 if missing).
+ */
+export async function getCurrentUser(event: H3Event): Promise<User> {
+  const authUser = await requireUser(event);
+  const user = await getUser(authUser.id);
+  if (!user) {
+    throw createError({ statusCode: 404, message: "用户不存在" });
+  }
+  return user;
+}
+
+/**
+ * Shape returned to clients after login/register.
+ */
+export function toPublicUser(user: User) {
+  return {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    balance: user.balance,
+    depositAddress: user.depositAddress,
+    feeRateBps: user.feeRateBps,
+  };
+}
+
 // === CSRF check ===
 
+function checkOriginHeader(headerName: string, event: H3Event, host: string): void {
+  const value = getHeader(event, headerName);
+  if (!value) return;
+  try {
+    if (new URL(value).host === host) return;
+  } catch {
+    // invalid URL, deny
+  }
+  throw createError({ statusCode: 403, message: "CSRF 校验失败" });
+}
+
 export function csrfCheck(event: H3Event): void {
-  const origin = getHeader(event, "origin");
   const host = getHeader(event, "host");
-
-  if (origin && host) {
-    try {
-      const originHost = new URL(origin).host;
-      if (originHost === host) return;
-    } catch {
-      // invalid origin URL, deny
-    }
-    throw createError({ statusCode: 403, message: "CSRF 校验失败" });
-  }
-
-  const referer = getHeader(event, "referer");
-  if (referer && host) {
-    try {
-      const refererHost = new URL(referer).host;
-      if (refererHost === host) return;
-    } catch {
-      // invalid referer URL, deny
-    }
-    throw createError({ statusCode: 403, message: "CSRF 校验失败" });
-  }
-
-  // No Origin or Referer — pass through (native app / curl)
+  if (!host) return; // native app / curl — pass through
+  checkOriginHeader("origin", event, host);
+  checkOriginHeader("referer", event, host);
 }
 
 // === Password validation ===
@@ -168,4 +185,25 @@ export function validateEmail(email: string): {
     return { valid: false, message: "邮箱格式不正确", normalized: "" };
   }
   return { valid: true, message: "", normalized };
+}
+
+/**
+ * Validate and normalize an email, throwing 400 on failure.
+ */
+export function requireValidEmail(email: string): string {
+  const result = validateEmail(email);
+  if (!result.valid) {
+    throw createError({ statusCode: 400, message: result.message });
+  }
+  return result.normalized;
+}
+
+/**
+ * Validate password strength, throwing 400 on failure.
+ */
+export function requireValidPassword(password: string): void {
+  const result = validatePassword(password);
+  if (!result.valid) {
+    throw createError({ statusCode: 400, message: result.message });
+  }
 }

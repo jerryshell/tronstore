@@ -3,10 +3,12 @@ import { v7 } from "uuid";
 import { createUser, getUserByEmail, countUsers } from "../../utils/storage";
 import {
   hashPassword,
-  validatePassword,
-  validateEmail,
+  requireValidPassword,
+  requireValidEmail,
   createSessionCookie,
+  toPublicUser,
 } from "../../utils/auth";
+import { parseBody } from "../../utils/admin-query";
 import { acquireRegistrationLock } from "../../utils/registration-lock";
 import { logger } from "../../utils/logger";
 
@@ -16,27 +18,9 @@ const registerSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event);
-
-  const parsed = registerSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
-
-  const { email: rawEmail, password } = parsed.data;
-
-  // Validate email
-  const emailResult = validateEmail(rawEmail);
-  if (!emailResult.valid) {
-    throw createError({ statusCode: 400, message: emailResult.message });
-  }
-  const email = emailResult.normalized;
-
-  // Validate password
-  const pwResult = validatePassword(password);
-  if (!pwResult.valid) {
-    throw createError({ statusCode: 400, message: pwResult.message });
-  }
+  const { email: rawEmail, password } = await parseBody(event, registerSchema);
+  const email = requireValidEmail(rawEmail);
+  requireValidPassword(password);
 
   // Check if email already exists
   const existing = await getUserByEmail(email);
@@ -76,14 +60,7 @@ export default defineEventHandler(async (event) => {
     // Create session
     await createSessionCookie(event, userId);
 
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      balance: user.balance,
-      depositAddress: user.depositAddress,
-      feeRateBps: user.feeRateBps,
-    };
+    return toPublicUser(user);
   } finally {
     release();
   }

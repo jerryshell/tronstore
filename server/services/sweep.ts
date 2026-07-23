@@ -100,6 +100,42 @@ async function validateSweepSettings(): Promise<SweepConfig | null> {
   return { settings, gasKey, gasPoolAddress, network };
 }
 
+// === Settings update ===
+
+export interface SweepSettingsUpdate {
+  sweepTargetAddress?: string;
+  sweepGasPoolPrivateKey?: string;
+  sweepThreshold?: number;
+  sweepGasTrxAmount?: number;
+  sweepIntervalMinutes?: number;
+  sweepEnabled?: boolean;
+}
+
+/**
+ * Apply a partial update from the admin settings API to the sweep settings.
+ * Only reads/writes storage when at least one sweep field is present.
+ */
+export async function applySweepSettings(data: SweepSettingsUpdate): Promise<void> {
+  const current = await getSweepSettings();
+  let changed = false;
+  const set = <K extends keyof SweepSettings>(field: K, value: SweepSettings[K] | undefined) => {
+    if (value === undefined) return;
+    current[field] = value;
+    changed = true;
+  };
+
+  set("targetAddress", data.sweepTargetAddress);
+  if (data.sweepGasPoolPrivateKey !== undefined) {
+    set("gasPoolPrivateKey", data.sweepGasPoolPrivateKey || null);
+  }
+  set("threshold", data.sweepThreshold);
+  set("gasTrxAmount", data.sweepGasTrxAmount);
+  set("intervalMinutes", data.sweepIntervalMinutes);
+  set("enabled", data.sweepEnabled);
+
+  if (changed) await setSweepSettings(current);
+}
+
 interface Candidate {
   userId: string;
   address: string;
@@ -137,6 +173,15 @@ interface GasCheckResult {
   totalGasNeeded: number;
 }
 
+async function getTrxBalanceAndFee(
+  address: string,
+  network: "nile" | "mainnet",
+): Promise<{ trxBalance: number; estimatedFee: number }> {
+  const { sun: trxSun } = await getTrxBalance(address, network);
+  const estimatedFee = await estimateTrc20Fee(address, network);
+  return { trxBalance: Number(trxSun), estimatedFee };
+}
+
 async function preCheckGas(candidates: Candidate[], config: SweepConfig): Promise<GasCheckResult> {
   const items: SweepItem[] = [];
   let totalGasNeeded = 0;
@@ -156,9 +201,7 @@ async function preCheckGas(candidates: Candidate[], config: SweepConfig): Promis
       const usdtBalance = await getUsdtBalance(c.address, config.network);
       item.amount = Number(usdtBalance.raw);
 
-      const { sun: trxSun } = await getTrxBalance(c.address, config.network);
-      const estimatedFee = await estimateTrc20Fee(c.address, config.network);
-      const trxBalance = Number(trxSun);
+      const { trxBalance, estimatedFee } = await getTrxBalanceAndFee(c.address, config.network);
 
       if (trxBalance < estimatedFee) {
         const needed = Math.max(config.settings.gasTrxAmount, Math.ceil(estimatedFee * 1.2));
@@ -183,9 +226,7 @@ async function processGasRefill(items: SweepItem[], config: SweepConfig): Promis
     if (item.status === "skipped" || item.status === "failed") continue;
 
     try {
-      const { sun: trxSun } = await getTrxBalance(item.address, config.network);
-      const estimatedFee = await estimateTrc20Fee(item.address, config.network);
-      const trxBalance = Number(trxSun);
+      const { trxBalance, estimatedFee } = await getTrxBalanceAndFee(item.address, config.network);
 
       if (trxBalance < estimatedFee) {
         const needed = Math.max(config.settings.gasTrxAmount, Math.ceil(estimatedFee * 1.2));

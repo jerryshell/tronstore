@@ -9,6 +9,7 @@ import {
   updateUserBalance,
 } from "../utils/storage";
 import { acquireUserLock } from "../utils/user-lock";
+import { parseBody } from "../utils/admin-query";
 import { logger } from "../utils/logger";
 
 const orderSchema = z.object({
@@ -20,13 +21,7 @@ export default defineEventHandler(async (event) => {
 
   const authUser = await requireUser(event);
 
-  const body = await readBody(event);
-  const parsed = orderSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
-
-  const { productId } = parsed.data;
+  const { productId } = await parseBody(event, orderSchema);
 
   const release = await acquireUserLock(authUser.id);
   try {

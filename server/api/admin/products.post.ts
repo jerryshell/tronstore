@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { v7 } from "uuid";
-import { requireAdmin, csrfCheck } from "../../utils/auth";
+import { requireAdminCsrf, parseBody } from "../../utils/admin-query";
 import { createProduct } from "../../utils/storage";
 import { logger } from "../../utils/logger";
 
@@ -12,22 +12,17 @@ const productSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  csrfCheck(event);
-  await requireAdmin(event);
+  await requireAdminCsrf(event);
 
-  const body = await readBody(event);
-  const parsed = productSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
+  const data = await parseBody(event, productSchema);
 
   const now = Date.now();
   const product = {
     id: v7(),
-    name: parsed.data.name,
-    description: parsed.data.description,
-    price: parsed.data.price,
-    enabled: parsed.data.enabled,
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    enabled: data.enabled,
     createdAt: now,
     updatedAt: now,
   };

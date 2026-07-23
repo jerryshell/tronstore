@@ -7,13 +7,8 @@ definePageMeta({
 
 const toast = useToast();
 const { formatDate } = useTimezone();
-const { copy, copied } = useClipboard();
-const config = useRuntimeConfig();
-const tronNetwork = config.public.tronNetwork as string;
-
-watch(copied, (val) => {
-  if (val) toast.add({ title: "地址已复制", color: "success" });
-});
+const { copy, copied } = useCopyToast();
+const tronNetwork = useTronNetwork();
 
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -132,11 +127,7 @@ onMounted(fetch);
                 variant="ghost"
                 size="xs"
                 title="在 TronScan 中查看"
-                :to="
-                  tronNetwork === 'mainnet'
-                    ? `https://tronscan.org/#/address/${row.original.depositAddress}`
-                    : `https://nile.tronscan.org/#/address/${row.original.depositAddress}`
-                "
+                :to="tronscanAddressUrl(row.original.depositAddress)"
                 target="_blank"
               />
             </div>

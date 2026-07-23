@@ -6,11 +6,8 @@ definePageMeta({
 const { formatDate } = useTimezone();
 
 const balance = ref(0);
-const entries = ref<any[]>([]);
-const cursor = ref<string | null>(null);
-const loading = ref(true);
-const showDetail = ref(false);
-const detailItem = ref<any>(null);
+const { items: entries, loading, fetch: fetchLedger } = useCursorPagination("/api/wallet/ledger");
+const { open: showDetail, item: detailItem, show } = useDetailModal();
 const detailData = ref<any>(null);
 const loadingDetail = ref(false);
 
@@ -20,42 +17,28 @@ const columns = [
     header: "类型",
     cell: ({ row }: any) => (row.original.type === "deposit" ? "充值" : "购买"),
   },
-  {
-    accessorKey: "amount",
-    header: "金额",
-    cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6) + " USDT",
-  },
+  usdtColumn("amount", "金额"),
   {
     accessorKey: "balanceAfter",
     header: "余额",
     cell: ({ row }: any) => (row.original.balanceAfter / 1_000_000).toFixed(6),
   },
-  {
-    accessorKey: "createdAt",
-    header: "时间",
-    cell: ({ row }: any) => formatDate(row.original.createdAt),
-  },
-  { id: "actions", header: "操作" },
+  dateColumn(formatDate),
+  actionsColumn,
 ];
 
 async function fetch() {
   loading.value = true;
   try {
-    const [bal, ledger] = await Promise.all([
-      $fetch("/api/wallet"),
-      $fetch("/api/wallet/ledger", { query: { limit: 50, cursor: cursor.value } }),
-    ]);
+    const bal = await $fetch("/api/wallet");
     balance.value = (bal as any).balance;
-    entries.value = (ledger as any).items || [];
-    cursor.value = (ledger as any).cursor;
   } catch {}
-  loading.value = false;
+  await fetchLedger();
 }
 
 async function viewDetail(entry: any) {
-  detailItem.value = entry;
+  show(entry);
   detailData.value = null;
-  showDetail.value = true;
   loadingDetail.value = true;
   try {
     if (entry.type === "deposit") {
@@ -94,16 +77,13 @@ onMounted(fetch);
           <template #header>
             <h2 class="text-lg font-semibold">流水</h2>
           </template>
-          <UTable v-if="!loading && entries.length > 0" :data="entries" :columns="columns">
-            <template #actions-cell="{ row }">
-              <UButton size="xs" @click="viewDetail(row.original)">详情</UButton>
-            </template>
-          </UTable>
-
-          <div v-else-if="loading" class="space-y-2 py-4">
-            <USkeleton v-for="i in 5" :key="i" class="h-10 w-full" />
-          </div>
-          <div v-else class="text-center text-muted-foreground py-8">暂无流水记录</div>
+          <DataTable
+            :data="entries"
+            :columns="columns"
+            :loading="loading"
+            empty-message="暂无流水记录"
+            @view="viewDetail"
+          />
         </UCard>
       </div>
     </template>

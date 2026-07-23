@@ -18,36 +18,10 @@ interface PaginatedResult<T> {
 }
 
 /**
- * Paginate by a pre-fetched list of IDs.
+ * Generic pagination over pre-sorted keys. Handles both ID-based
+ * and storage-key-based cursors.
  */
-async function paginateByIds<T>(
-  ids: string[],
-  fetcher: (id: string) => Promise<T | null>,
-  limit: number,
-  cursor?: string,
-): Promise<PaginatedResult<T>> {
-  const sorted = [...ids].sort().reverse();
-  let startIdx = 0;
-  if (cursor) {
-    const pos = sorted.indexOf(cursor);
-    if (pos >= 0) startIdx = pos + 1;
-  }
-  const pageIds = sorted.slice(startIdx, startIdx + limit);
-  const items: T[] = [];
-  for (const id of pageIds) {
-    const item = await fetcher(id);
-    if (item) items.push(item);
-  }
-  return {
-    items,
-    cursor: sorted.length > startIdx + limit ? (pageIds[pageIds.length - 1] ?? null) : null,
-  };
-}
-
-/**
- * Paginate by keys from storage.
- */
-async function paginateByKeys<T extends { id: string }>(
+async function paginate<T>(
   keys: string[],
   fetcher: (key: string) => Promise<T | null>,
   limit: number,
@@ -69,7 +43,7 @@ async function paginateByKeys<T extends { id: string }>(
   }
   return {
     items,
-    cursor: sorted.length > startIdx + limit ? (items[items.length - 1]?.id ?? null) : null,
+    cursor: sorted.length > startIdx + limit ? (pageKeys[pageKeys.length - 1] ?? null) : null,
   };
 }
 
@@ -194,7 +168,7 @@ export async function listDepositsByUser(
   cursor?: string,
 ): Promise<PaginatedResult<Deposit>> {
   const ids = ((await ds("deposits").getItem(`deposit:user:${userId}`)) as string[]) || [];
-  return paginateByIds(ids, getDeposit, limit, cursor);
+  return paginate(ids, getDeposit, limit, cursor);
 }
 
 export async function listAllDeposits(
@@ -205,7 +179,7 @@ export async function listAllDeposits(
   const depositIds = keys
     .filter((k) => !k.includes(":event:") && !k.includes(":user:"))
     .map((k) => k.replace("deposit:", ""));
-  return paginateByIds(depositIds, getDeposit, limit, cursor);
+  return paginate(depositIds, getDeposit, limit, cursor);
 }
 
 // === Ledger ===
@@ -230,7 +204,7 @@ export async function listLedgerByUser(
   cursor?: string,
 ): Promise<PaginatedResult<LedgerEntry>> {
   const ids = ((await ls("ledger").getItem(`entry:user:${userId}`)) as string[]) || [];
-  return paginateByIds(ids, getLedgerEntry, limit, cursor);
+  return paginate(ids, getLedgerEntry, limit, cursor);
 }
 
 // === Products ===
@@ -253,7 +227,7 @@ export async function deleteProduct(id: string): Promise<void> {
 
 export async function listProducts(limit = 50, cursor?: string): Promise<PaginatedResult<Product>> {
   const keys = await ps("products").getKeys("product:");
-  return paginateByKeys(
+  return paginate(
     keys,
     async (key) => (await ps("products").getItem(key)) as Product | null,
     limit,
@@ -289,12 +263,12 @@ export async function listOrdersByUser(
   cursor?: string,
 ): Promise<PaginatedResult<Order>> {
   const ids = ((await os("orders").getItem(`order:user:${userId}`)) as string[]) || [];
-  return paginateByIds(ids, getOrder, limit, cursor);
+  return paginate(ids, getOrder, limit, cursor);
 }
 
 export async function listAllOrders(limit = 50, cursor?: string): Promise<PaginatedResult<Order>> {
   const keys = (await os("orders").getKeys("order:")).filter((k) => !k.includes(":user:"));
-  return paginateByKeys(
+  return paginate(
     keys,
     async (key) => (await os("orders").getItem(key)) as Order | null,
     limit,
@@ -322,7 +296,7 @@ export async function listSweepTasks(
   cursor?: string,
 ): Promise<PaginatedResult<SweepTask>> {
   const keys = await ss("sweeps").getKeys("sweep:");
-  return paginateByKeys(
+  return paginate(
     keys,
     async (key) => (await ss("sweeps").getItem(key)) as SweepTask | null,
     limit,
@@ -340,6 +314,15 @@ export async function getSystemSettings(): Promise<SystemSettings> {
 
 export async function setSystemSettings(settings: SystemSettings): Promise<void> {
   await sts("settings").setItem("system", settings);
+}
+
+/**
+ * Effective fee rate for a user: per-user override or system default.
+ */
+export async function getEffectiveFeeRateBps(user: User): Promise<number> {
+  if (user.feeRateBps != null) return user.feeRateBps;
+  const settings = await getSystemSettings();
+  return settings.defaultFeeRateBps;
 }
 
 export async function getSweepSettings(): Promise<SweepSettings> {

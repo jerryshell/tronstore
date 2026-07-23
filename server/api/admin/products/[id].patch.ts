@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAdmin, csrfCheck } from "../../../utils/auth";
+import { requireAdminCsrf, requireParam, parseBody } from "../../../utils/admin-query";
 import { getProduct, updateProduct } from "../../../utils/storage";
 import { logger } from "../../../utils/logger";
 
@@ -11,25 +11,17 @@ const patchSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  csrfCheck(event);
-  await requireAdmin(event);
-
-  const id = getRouterParam(event, "id");
-  if (!id) throw createError({ statusCode: 400, message: "缺少 id" });
-
-  const body = await readBody(event);
-  const parsed = patchSchema.safeParse(body);
-  if (!parsed.success) {
-    throw createError({ statusCode: 400, message: "参数错误" });
-  }
+  await requireAdminCsrf(event);
+  const id = requireParam(event, "id");
+  const data = await parseBody(event, patchSchema);
 
   const product = await getProduct(id);
   if (!product) throw createError({ statusCode: 404, message: "商品不存在" });
 
-  if (parsed.data.name !== undefined) product.name = parsed.data.name;
-  if (parsed.data.description !== undefined) product.description = parsed.data.description;
-  if (parsed.data.price !== undefined) product.price = parsed.data.price;
-  if (parsed.data.enabled !== undefined) product.enabled = parsed.data.enabled;
+  const updates = Object.fromEntries(
+    Object.entries(data).filter(([, value]) => value !== undefined),
+  );
+  Object.assign(product, updates);
   product.updatedAt = Date.now();
 
   await updateProduct(product);

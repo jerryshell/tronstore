@@ -2,14 +2,9 @@
 import type { User } from "../../../shared/types";
 
 const { formatDate } = useTimezone();
-const { copy, copied } = useClipboard();
 const toast = useToast();
-const config = useRuntimeConfig();
-const tronNetwork = config.public.tronNetwork as string;
-
-watch(copied, (val) => {
-  if (val) toast.add({ title: "地址已复制", color: "success" });
-});
+const { copy, copied } = useCopyToast();
+const tronNetwork = useTronNetwork();
 
 const props = defineProps<{
   detailUser: User | null;
@@ -87,11 +82,7 @@ function copyAddress(address: string) {
               variant="ghost"
               size="xs"
               title="在 TronScan 中查看"
-              :to="
-                tronNetwork === 'mainnet'
-                  ? `https://tronscan.org/#/address/${detailUser.depositAddress}`
-                  : `https://nile.tronscan.org/#/address/${detailUser.depositAddress}`
-              "
+              :to="tronscanAddressUrl(detailUser.depositAddress)"
               target="_blank"
             />
           </div>
