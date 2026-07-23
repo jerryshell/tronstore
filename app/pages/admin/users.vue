@@ -7,6 +7,13 @@ definePageMeta({
 
 const toast = useToast();
 const { formatDate } = useTimezone();
+const { copy, copied } = useClipboard();
+const config = useRuntimeConfig();
+const tronNetwork = config.public.tronNetwork as string;
+
+watch(copied, (val) => {
+  if (val) toast.add({ title: "地址已复制", color: "success" });
+});
 
 const users = ref<User[]>([]);
 const loading = ref(true);
@@ -45,6 +52,13 @@ async function saveFeeRate(userId: string, feeRateBps: number | null) {
   }
 }
 
+function copyAddress(address: string) {
+  if (!address) return;
+  copy(address).catch(() => {
+    toast.add({ title: "复制失败", color: "error" });
+  });
+}
+
 onMounted(fetch);
 </script>
 
@@ -70,7 +84,7 @@ onMounted(fetch);
             {
               accessorKey: 'depositAddress',
               header: '充值地址',
-              cell: ({ row }: any) => row.original.depositAddress || '未分配',
+              id: 'depositAddress',
             },
             {
               accessorKey: 'feeRateBps',
@@ -90,6 +104,31 @@ onMounted(fetch);
         >
           <template #actions-cell="{ row }">
             <UButton size="xs" @click="viewDetail(row.original.id)">详情</UButton>
+          </template>
+          <template #depositAddress-cell="{ row }">
+            <div v-if="row.original.depositAddress" class="flex items-center gap-2">
+              <span class="font-mono text-xs">{{ row.original.depositAddress }}</span>
+              <UButton
+                icon="i-lucide-copy"
+                variant="ghost"
+                size="xs"
+                title="复制地址"
+                @click="copyAddress(row.original.depositAddress)"
+              />
+              <UButton
+                icon="i-lucide-external-link"
+                variant="ghost"
+                size="xs"
+                title="在 TronScan 中查看"
+                :to="
+                  tronNetwork === 'mainnet'
+                    ? `https://tronscan.org/#/address/${row.original.depositAddress}`
+                    : `https://nile.tronscan.org/#/address/${row.original.depositAddress}`
+                "
+                target="_blank"
+              />
+            </div>
+            <span v-else>未分配</span>
           </template>
         </UTable>
 

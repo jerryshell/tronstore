@@ -6,6 +6,14 @@ definePageMeta({
 const route = useRoute();
 
 const { formatDate } = useTimezone();
+const { copy, copied } = useClipboard();
+const toast = useToast();
+const config = useRuntimeConfig();
+const tronNetwork = config.public.tronNetwork as string;
+
+watch(copied, (val) => {
+  if (val) toast.add({ title: "地址已复制", color: "success" });
+});
 
 const user = ref<any>(null);
 const deposits = ref<any[]>([]);
@@ -29,6 +37,13 @@ async function fetch() {
     ledger.value = (l as any).items || [];
   } catch {}
   loading.value = false;
+}
+
+function copyAddress(address: string) {
+  if (!address) return;
+  copy(address).catch(() => {
+    toast.add({ title: "复制失败", color: "error" });
+  });
 }
 
 onMounted(fetch);
@@ -67,7 +82,29 @@ onMounted(fetch);
             </div>
             <div class="flex justify-between">
               <span class="text-muted-foreground">充值地址</span>
-              <span class="font-mono text-sm">{{ user.depositAddress || "未分配" }}</span>
+              <div v-if="user.depositAddress" class="flex items-center gap-2">
+                <span class="font-mono text-sm">{{ user.depositAddress }}</span>
+                <UButton
+                  icon="i-lucide-copy"
+                  variant="ghost"
+                  size="xs"
+                  title="复制地址"
+                  @click="copyAddress(user.depositAddress)"
+                />
+                <UButton
+                  icon="i-lucide-external-link"
+                  variant="ghost"
+                  size="xs"
+                  title="在 TronScan 中查看"
+                  :to="
+                    tronNetwork === 'mainnet'
+                      ? `https://tronscan.org/#/address/${user.depositAddress}`
+                      : `https://nile.tronscan.org/#/address/${user.depositAddress}`
+                  "
+                  target="_blank"
+                />
+              </div>
+              <span v-else class="font-mono text-sm">未分配</span>
             </div>
           </dl>
         </UCard>

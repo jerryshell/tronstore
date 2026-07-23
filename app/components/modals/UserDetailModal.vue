@@ -2,6 +2,14 @@
 import type { User } from "~~/shared/types";
 
 const { formatDate } = useTimezone();
+const { copy, copied } = useClipboard();
+const toast = useToast();
+const config = useRuntimeConfig();
+const tronNetwork = config.public.tronNetwork as string;
+
+watch(copied, (val) => {
+  if (val) toast.add({ title: "地址已复制", color: "success" });
+});
 
 const props = defineProps<{
   detailUser: User | null;
@@ -35,6 +43,13 @@ async function saveFeeRate() {
     savingFeeRate.value = false;
   }
 }
+
+function copyAddress(address: string) {
+  if (!address) return;
+  copy(address).catch(() => {
+    toast.add({ title: "复制失败", color: "error" });
+  });
+}
 </script>
 
 <template>
@@ -58,7 +73,29 @@ async function saveFeeRate() {
           <span>{{ (detailUser.balance / 1_000_000).toFixed(6) }} USDT</span>
 
           <span class="text-muted-foreground">充值地址</span>
-          <span class="break-all text-xs">{{ detailUser.depositAddress || "未分配" }}</span>
+          <div v-if="detailUser.depositAddress" class="flex items-center gap-2">
+            <span class="break-all text-xs font-mono">{{ detailUser.depositAddress }}</span>
+            <UButton
+              icon="i-lucide-copy"
+              variant="ghost"
+              size="xs"
+              title="复制地址"
+              @click="copyAddress(detailUser.depositAddress)"
+            />
+            <UButton
+              icon="i-lucide-external-link"
+              variant="ghost"
+              size="xs"
+              title="在 TronScan 中查看"
+              :to="
+                tronNetwork === 'mainnet'
+                  ? `https://tronscan.org/#/address/${detailUser.depositAddress}`
+                  : `https://nile.tronscan.org/#/address/${detailUser.depositAddress}`
+              "
+              target="_blank"
+            />
+          </div>
+          <span v-else class="break-all text-xs">未分配</span>
 
           <span class="text-muted-foreground">注册时间</span>
           <span>{{ formatDate(detailUser.createdAt) }}</span>
