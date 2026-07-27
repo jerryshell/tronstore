@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@fystack/mpcium-ts": "^0.3.2",
-    "@iconify-json/lucide": "^1.2.118",
+    "@iconify-json/lucide": "^1.2.120",
     "@nuxt/ui": "^4.10.0",
     "@vueuse/nuxt": "^14.3.0",
     "ethers": "^6.17.0",
@@ -31,7 +31,7 @@
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
     "vitest": "^4.1.10",
-    "vue-tsc": "^3.3.7"
+    "vue-tsc": "^3.3.8"
   },
   "overrides": {
     "@unhead/vue": "3.2.1",
