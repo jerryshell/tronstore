@@ -30,8 +30,8 @@ async function fetch() {
     settings.value = data;
     feeRate.value = (data as any).system.defaultFeeRateBps / 10000;
     sweepTargetAddress.value = (data as any).sweep.targetAddress;
-    sweepThreshold.value = (data as any).sweep.threshold / 1_000_000;
-    sweepGasTrxAmount.value = (data as any).sweep.gasTrxAmount / 1_000_000;
+    sweepThreshold.value = toUsdt((data as any).sweep.threshold);
+    sweepGasTrxAmount.value = toUsdt((data as any).sweep.gasTrxAmount);
     sweepIntervalMinutes.value = (data as any).sweep.intervalMinutes;
     sweepEnabled.value = (data as any).sweep.enabled;
   } finally {
@@ -60,8 +60,8 @@ async function save() {
         defaultFeeRateBps: Math.round(feeRate.value * 10000),
         sweepTargetAddress: sweepTargetAddress.value,
         sweepGasPoolPrivateKey: sweepGasPoolPrivateKey.value || undefined,
-        sweepThreshold: Math.round(sweepThreshold.value * 1_000_000),
-        sweepGasTrxAmount: Math.round(sweepGasTrxAmount.value * 1_000_000),
+        sweepThreshold: parseUsdt(sweepThreshold.value),
+        sweepGasTrxAmount: parseUsdt(sweepGasTrxAmount.value),
         sweepIntervalMinutes: sweepIntervalMinutes.value,
         sweepEnabled: sweepEnabled.value,
       },
@@ -142,15 +142,11 @@ onMounted(fetch);
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">TRX 余额</span>
-                <span class="font-medium"
-                  >{{ (gasPoolBalance.trxBalance / 1_000_000).toFixed(6) }} TRX</span
-                >
+                <span class="font-medium">{{ formatUsdt(gasPoolBalance.trxBalance) }} TRX</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-muted-foreground">USDT 余额</span>
-                <span class="font-medium"
-                  >{{ (gasPoolBalance.usdtBalance / 1_000_000).toFixed(6) }} USDT</span
-                >
+                <span class="font-medium">{{ formatUsdtLabel(gasPoolBalance.usdtBalance) }}</span>
               </div>
             </div>
 

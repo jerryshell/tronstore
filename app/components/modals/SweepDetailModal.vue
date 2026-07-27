@@ -24,7 +24,7 @@ const open = defineModel<boolean>("open", { required: true });
           <span class="text-muted-foreground">目标地址</span>
           <span class="break-all text-xs">{{ detailTask.targetAddress }}</span>
           <span class="text-muted-foreground">归集总额</span>
-          <span>{{ (detailTask.totalAmount / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailTask.totalAmount) }}</span>
           <span class="text-muted-foreground">开始时间</span>
           <span>{{ formatDate(detailTask.startedAt) }}</span>
           <span class="text-muted-foreground">完成时间</span>
@@ -42,7 +42,7 @@ const open = defineModel<boolean>("open", { required: true });
               {
                 accessorKey: 'amount',
                 header: '金额',
-                cell: ({ row }: any) => (row.original.amount / 1_000_000).toFixed(6),
+                cell: ({ row }: any) => formatUsdt(row.original.amount),
               },
               {
                 accessorKey: 'status',

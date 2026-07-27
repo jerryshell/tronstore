@@ -22,10 +22,10 @@ const open = defineModel<boolean>("open", { required: true });
           <span>{{ detailItem.type === "deposit" ? "充值" : "购买" }}</span>
 
           <span class="text-muted-foreground">金额</span>
-          <span>{{ (detailItem.amount / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailItem.amount) }}</span>
 
           <span class="text-muted-foreground">余额</span>
-          <span>{{ (detailItem.balanceAfter / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailItem.balanceAfter) }}</span>
 
           <span class="text-muted-foreground">时间</span>
           <span>{{ formatDate(detailItem.createdAt) }}</span>
@@ -42,10 +42,10 @@ const open = defineModel<boolean>("open", { required: true });
             <span>{{ (detailData.feeRateBps / 100).toFixed(2) }}%</span>
 
             <span class="text-muted-foreground">手续费</span>
-            <span>{{ (detailData.feeAmount / 1_000_000).toFixed(6) }} USDT</span>
+            <span>{{ formatUsdtLabel(detailData.feeAmount) }}</span>
 
             <span class="text-muted-foreground">到账金额</span>
-            <span>{{ (detailData.creditAmount / 1_000_000).toFixed(6) }} USDT</span>
+            <span>{{ formatUsdtLabel(detailData.creditAmount) }}</span>
 
             <span class="text-muted-foreground">发送地址</span>
             <span class="break-all text-xs">{{ detailData.from }}</span>
@@ -62,7 +62,7 @@ const open = defineModel<boolean>("open", { required: true });
             <span>{{ detailData.productSnapshot?.description || "-" }}</span>
 
             <span class="text-muted-foreground">购买价格</span>
-            <span>{{ (detailData.price / 1_000_000).toFixed(6) }} USDT</span>
+            <span>{{ formatUsdtLabel(detailData.price) }}</span>
           </div>
         </template>
       </div>

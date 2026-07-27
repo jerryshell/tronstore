@@ -46,7 +46,12 @@ onMounted(() => fetch());
       <div class="p-6">
         <UTable v-if="!loading && deposits.length > 0" :data="deposits" :columns="columns" />
 
-        <AdminTableState v-else :loading="loading" empty-message="暂无充值记录" />
+        <TableState
+          v-else
+          :loading="loading"
+          empty-message="暂无充值记录"
+          skeleton-class="h-12 w-full"
+        />
 
         <div v-if="hasMore" class="mt-4 text-center">
           <UButton variant="outline" :loading="loading" @click="loadMore"> 加载更多 </UButton>

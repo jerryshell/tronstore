@@ -23,7 +23,22 @@ import { logger } from "../utils/logger";
 import type { SweepTask, SweepItem, SweepSettings } from "../../shared/types";
 import { TronWeb } from "tronweb";
 
-let sweepRunning = false;
+const SWEEP_LOCK_KEY = "sweep:cron:lock";
+const SWEEP_LOCK_TTL = 10 * 60 * 1000; // 10 分钟，防止进程崩溃锁永不释放
+const SWEEP_GLOBAL_TIMEOUT = 30 * 60 * 1000;
+
+async function acquireSweepLock(): Promise<boolean> {
+  const sweeps = useStorage("sweeps");
+  const existing = (await sweeps.getItem(SWEEP_LOCK_KEY)) as number | null;
+  if (existing && Date.now() - existing < SWEEP_LOCK_TTL) return false;
+  await sweeps.setItem(SWEEP_LOCK_KEY, Date.now());
+  return true;
+}
+
+async function releaseSweepLock(): Promise<void> {
+  const sweeps = useStorage("sweeps");
+  await sweeps.removeItem(SWEEP_LOCK_KEY);
+}
 
 // === Helpers ===
 
@@ -111,10 +126,6 @@ export interface SweepSettingsUpdate {
   sweepEnabled?: boolean;
 }
 
-/**
- * Apply a partial update from the admin settings API to the sweep settings.
- * Only reads/writes storage when at least one sweep field is present.
- */
 export async function applySweepSettings(data: SweepSettingsUpdate): Promise<void> {
   const current = await getSweepSettings();
   let changed = false;
@@ -219,10 +230,15 @@ async function preCheckGas(candidates: Candidate[], config: SweepConfig): Promis
   return { items, totalGasNeeded };
 }
 
-async function processGasRefill(items: SweepItem[], config: SweepConfig): Promise<void> {
+async function processGasRefill(
+  items: SweepItem[],
+  config: SweepConfig,
+  checkTimeout: (label: string) => void,
+): Promise<void> {
   const tronWeb = new TronWeb({ fullHost: "https://nile.trongrid.io", privateKey: config.gasKey });
 
   for (const item of items) {
+    checkTimeout("补 Gas 循环");
     if (item.status === "skipped" || item.status === "failed") continue;
 
     try {
@@ -272,8 +288,10 @@ async function processUsdtSweep(
   users: { id: string; mpcWalletId: string | null; depositAddress: string | null }[],
   config: SweepConfig,
   task: SweepTask,
+  checkTimeout: (label: string) => void,
 ): Promise<void> {
   for (const item of items) {
+    checkTimeout("归集循环");
     if (item.status === "skipped" || item.status === "failed") continue;
 
     try {
@@ -327,16 +345,25 @@ async function processUsdtSweep(
 // === Main entry ===
 
 export async function runSweep(): Promise<SweepTask | null> {
-  if (sweepRunning) {
-    logger.warn("归集任务正在运行，跳过");
+  const locked = await acquireSweepLock();
+  if (!locked) {
+    logger.warn("归集任务正在运行（分布式锁），跳过");
     return null;
   }
 
-  sweepRunning = true;
+  const startTime = Date.now();
+  const checkTimeout = (label: string) => {
+    if (Date.now() - startTime > SWEEP_GLOBAL_TIMEOUT) {
+      throw new Error(`归集全局超时: ${label}`);
+    }
+  };
 
   try {
     const config = await validateSweepSettings();
-    if (!config) return null;
+    if (!config) {
+      await releaseSweepLock();
+      return null;
+    }
 
     logger.info("开始归集任务", {
       targetAddress: config.settings.targetAddress,
@@ -384,11 +411,11 @@ export async function runSweep(): Promise<SweepTask | null> {
     }
 
     // 第 3 步：补充 Gas
-    await processGasRefill(items, config);
+    await processGasRefill(items, config, checkTimeout);
 
     // 第 4 步：归集 USDT
     const users = await listUsers();
-    await processUsdtSweep(items, users, config, task);
+    await processUsdtSweep(items, users, config, task, checkTimeout);
 
     // 第 5 步：收尾
     const allDone = items.every((i) => i.status === "done" || i.status === "skipped");
@@ -406,7 +433,7 @@ export async function runSweep(): Promise<SweepTask | null> {
     logger.error("归集任务异常", { error: String(error) });
     return null;
   } finally {
-    sweepRunning = false;
+    await releaseSweepLock();
   }
 }
 

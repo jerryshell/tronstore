@@ -21,7 +21,7 @@ const columns = [
   {
     accessorKey: "balanceAfter",
     header: "余额",
-    cell: ({ row }: any) => (row.original.balanceAfter / 1_000_000).toFixed(6),
+    cell: ({ row }: any) => formatUsdt(row.original.balanceAfter),
   },
   dateColumn(formatDate),
   actionsColumn,
@@ -69,7 +69,7 @@ onMounted(fetch);
             <USkeleton class="h-9 w-48" />
           </div>
           <div v-else class="text-3xl font-bold text-primary">
-            {{ (balance / 1_000_000).toFixed(6) }} USDT
+            {{ formatUsdtLabel(balance) }}
           </div>
         </UCard>
 

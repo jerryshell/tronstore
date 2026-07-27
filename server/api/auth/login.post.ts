@@ -6,7 +6,7 @@ import {
   requireValidEmail,
   toPublicUser,
 } from "../../utils/auth";
-import { parseBody } from "../../utils/admin-query";
+import { parseBody } from "../../utils/query";
 import {
   checkLoginRateLimit,
   recordLoginFailure,

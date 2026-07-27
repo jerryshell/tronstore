@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAdminCsrf, parseBody } from "../../utils/admin-query";
+import { requireAdminCsrf, parseBody } from "../../utils/query";
 import { setSystemSettings } from "../../utils/storage";
 import { applySweepSettings } from "../../services/sweep";
 import { logger } from "../../utils/logger";

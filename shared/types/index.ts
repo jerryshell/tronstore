@@ -103,14 +103,6 @@ export interface SessionData {
   tokenHash: string;
 }
 
-export interface PaginatedResult<T> {
-  items: T[];
-  cursor: string | null;
-}
-
-export const USDT_DECIMALS = 6;
-export const USDT_MULTIPLIER = 1_000_000;
-
 export const USDT_CONTRACTS = {
   nile: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
   mainnet: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",

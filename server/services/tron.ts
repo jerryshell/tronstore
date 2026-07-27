@@ -1,6 +1,7 @@
 import { TronWeb } from "tronweb";
 import { logger } from "../utils/logger";
 import { serverConfig } from "../utils/runtime-config";
+import { USDT_CONTRACTS } from "../../shared/types";
 
 function getApiKey(): string {
   return serverConfig.trongridApiKey || "";
@@ -62,11 +63,11 @@ const tronLimiter = new ConcurrencyLimiter(5);
 const networks = {
   mainnet: {
     tronGridBaseUrl: "https://api.trongrid.io",
-    contractAddress: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+    contractAddress: USDT_CONTRACTS.mainnet,
   },
   nile: {
     tronGridBaseUrl: "https://nile.trongrid.io",
-    contractAddress: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
+    contractAddress: USDT_CONTRACTS.nile,
   },
 } as const;
 

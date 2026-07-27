@@ -1,4 +1,4 @@
-import { parsePagination } from "../utils/admin-query";
+import { parsePagination } from "../utils/query";
 import { listProducts } from "../utils/storage";
 
 export default defineEventHandler(async (event) => {

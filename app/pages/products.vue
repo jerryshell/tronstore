@@ -12,7 +12,7 @@ const buying = ref(false);
 
 const balance = computed(() => {
   const b = auth.user?.value?.balance;
-  return b != null ? (b / 1_000_000).toFixed(6) : null;
+  return b != null ? formatUsdt(b) : null;
 });
 
 async function fetch() {
@@ -47,7 +47,7 @@ async function buy() {
     toast.add({ title: "购买成功！", color: "success" });
     showConfirm.value = false;
     targetProduct.value = null;
-    useAuth().refresh();
+    useAuth().fetchUser();
   } catch (error: any) {
     toast.add({ title: error.data?.message || "购买失败", color: "error" });
   } finally {

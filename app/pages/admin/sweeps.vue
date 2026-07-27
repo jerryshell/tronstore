@@ -34,7 +34,7 @@ const columns = [
   {
     accessorKey: "totalAmount",
     header: "归集总额",
-    cell: ({ row }: any) => (row.original.totalAmount / 1_000_000).toFixed(6) + " USDT",
+    cell: ({ row }: any) => formatUsdtLabel(row.original.totalAmount),
   },
   {
     accessorKey: "startedAt",
@@ -106,7 +106,12 @@ onMounted(fetch);
           </template>
         </UTable>
 
-        <AdminTableState v-else :loading="loading" empty-message="暂无归集任务" />
+        <TableState
+          v-else
+          :loading="loading"
+          empty-message="暂无归集任务"
+          skeleton-class="h-12 w-full"
+        />
       </div>
     </template>
   </UDashboardPanel>

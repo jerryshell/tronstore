@@ -21,9 +21,9 @@ const open = defineModel<boolean>("open", { required: true });
         <div class="p-3 bg-muted rounded-lg">
           <p class="font-medium">{{ product.name }}</p>
           <p class="text-muted-foreground">{{ product.description }}</p>
-          <p class="mt-2 font-bold">{{ (product.price / 1_000_000).toFixed(6) }} USDT</p>
+          <p class="mt-2 font-bold">{{ formatUsdtLabel(product.price) }}</p>
         </div>
-        <p class="text-muted-foreground">当前余额：{{ (balance / 1_000_000).toFixed(6) }} USDT</p>
+        <p class="text-muted-foreground">当前余额：{{ formatUsdtLabel(balance) }}</p>
         <p v-if="balance < product.price" class="text-error">余额不足，请先充值。</p>
       </div>
     </template>

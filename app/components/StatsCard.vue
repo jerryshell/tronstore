@@ -19,7 +19,7 @@ const props = defineProps<{
 
 const formattedValue = computed(() => {
   if (props.isAmount) {
-    return (props.value / 1_000_000).toFixed(6) + " USDT";
+    return formatUsdtLabel(props.value);
   }
   return props.value.toLocaleString();
 });

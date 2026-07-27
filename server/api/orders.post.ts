@@ -9,7 +9,7 @@ import {
   updateUserBalance,
 } from "../utils/storage";
 import { acquireUserLock } from "../utils/user-lock";
-import { parseBody } from "../utils/admin-query";
+import { parseBody } from "../utils/query";
 import { logger } from "../utils/logger";
 
 const orderSchema = z.object({

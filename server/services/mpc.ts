@@ -30,6 +30,36 @@ const pendingKeygens = new Map<
   PendingResolver<{ mpcWalletId: string; ecdsaPubKey: string; eddsaPubKey: string }>
 >();
 
+const SIG_PENDING_KEY = "mpc:pending:signatures";
+
+interface PendingSigRecord {
+  txId: string;
+  walletId: string;
+  txIdHex: string;
+  network: string;
+  startedAt: number;
+}
+
+async function savePendingSigs() {
+  const sweeps = useStorage("sweeps");
+  const recs: PendingSigRecord[] = [];
+  for (const [txId, r] of pendingSignatures) {
+    recs.push({
+      txId,
+      walletId: (r as any)._walletId ?? "",
+      txIdHex: (r as any)._txIdHex ?? "",
+      network: (r as any)._network ?? "",
+      startedAt: (r as any)._startedAt ?? 0,
+    });
+  }
+  await sweeps.setItem(SIG_PENDING_KEY, recs);
+}
+
+async function loadPendingSigs(): Promise<PendingSigRecord[]> {
+  const sweeps = useStorage("sweeps");
+  return ((await sweeps.getItem(SIG_PENDING_KEY)) as PendingSigRecord[]) ?? [];
+}
+
 function resolvePending<T>(
   map: Map<string, PendingResolver<T>>,
   key: string,
@@ -81,6 +111,7 @@ export async function initMpcClient() {
 
   mpcClient.onSignResult((event: SigningResultEvent) => {
     const resolver = resolvePending(pendingSignatures, event.tx_id);
+    savePendingSigs(); // 持久化同步
     if (!resolver) return;
 
     if (event.result_type !== "success" || !event.r || !event.s) {
@@ -106,6 +137,35 @@ export async function initMpcClient() {
     logger.info("钱包创建成功", { walletId: event.wallet_id });
     resolver.resolve(decodeKeygenResult(event));
   });
+
+  // 恢复崩溃前的 pending 签名请求
+  const sigs = await loadPendingSigs();
+  if (sigs.length > 0) {
+    logger.info("恢复 pending 签名请求", { count: sigs.length });
+    for (const s of sigs) {
+      const elapsed = Date.now() - s.startedAt;
+      if (elapsed > getMpcConfig().signTimeoutMs) {
+        logger.warn("跳过已超时签名", { txId: s.txId });
+        continue;
+      }
+      // 重新注册 resolver，等待回调
+      const remaining = getMpcConfig().signTimeoutMs - elapsed;
+      const timer = setTimeout(() => {
+        pendingSignatures.delete(s.txId);
+        savePendingSigs();
+        logger.error("恢复后签名超时", { txId: s.txId });
+      }, remaining);
+      pendingSignatures.set(s.txId, {
+        _walletId: s.walletId,
+        _txIdHex: s.txIdHex,
+        _network: s.network,
+        _startedAt: s.startedAt,
+        resolve: () => {},
+        reject: (err: Error) => logger.error("恢复签名失败", { txId: s.txId, error: err.message }),
+        timer,
+      } as any);
+    }
+  }
 
   logger.info("MPC客户端初始化完成");
   return mpcClient;
@@ -160,12 +220,22 @@ export async function signWithMpc(
 
   logger.info("签名请求已发送", { txId });
 
+  // 持久化 pending 请求，回调回来或超时后清除
+  const resolverObj = {
+    _walletId: walletId,
+    _txIdHex: txIdHex,
+    _network: networkInternalCode,
+    _startedAt: Date.now(),
+  };
+
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       pendingSignatures.delete(txId);
+      savePendingSigs();
       reject(new Error(`签名超时 (${signTimeoutMs}ms)`));
     }, signTimeoutMs);
 
-    pendingSignatures.set(txId, { resolve, reject, timer });
+    pendingSignatures.set(txId, { resolve, reject, timer, ...resolverObj } as any);
+    savePendingSigs();
   });
 }

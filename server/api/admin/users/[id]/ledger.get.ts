@@ -1,4 +1,4 @@
-import { requireAdminWithId, parsePagination } from "../../../../utils/admin-query";
+import { requireAdminWithId, parsePagination } from "../../../../utils/query";
 import { listLedgerByUser } from "../../../../utils/storage";
 
 export default defineEventHandler(async (event) => {

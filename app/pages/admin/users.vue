@@ -23,7 +23,7 @@ const columns = [
   {
     accessorKey: "balance",
     header: "余额",
-    cell: ({ row }: any) => (row.original.balance / 1_000_000).toFixed(6) + " USDT",
+    cell: ({ row }: any) => formatUsdtLabel(row.original.balance),
   },
   {
     accessorKey: "depositAddress",
@@ -135,7 +135,12 @@ onMounted(fetch);
           </template>
         </UTable>
 
-        <AdminTableState v-else :loading="loading" empty-message="暂无用户" />
+        <TableState
+          v-else
+          :loading="loading"
+          empty-message="暂无用户"
+          skeleton-class="h-12 w-full"
+        />
       </div>
     </template>
   </UDashboardPanel>

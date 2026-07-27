@@ -17,16 +17,16 @@ const open = defineModel<boolean>("open", { required: true });
           <span class="break-all text-xs">{{ detailItem.txHash }}</span>
 
           <span class="text-muted-foreground">金额</span>
-          <span>{{ (detailItem.amount / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailItem.amount) }}</span>
 
           <span class="text-muted-foreground">手续费率</span>
           <span>{{ (detailItem.feeRateBps / 100).toFixed(2) }}%</span>
 
           <span class="text-muted-foreground">手续费</span>
-          <span>{{ (detailItem.feeAmount / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailItem.feeAmount) }}</span>
 
           <span class="text-muted-foreground">到账金额</span>
-          <span>{{ (detailItem.creditAmount / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailItem.creditAmount) }}</span>
 
           <span class="text-muted-foreground">发送地址</span>
           <span class="break-all text-xs">{{ detailItem.from }}</span>

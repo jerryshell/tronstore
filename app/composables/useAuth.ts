@@ -41,10 +41,6 @@ export function useAuth() {
     router.push("/login");
   }
 
-  async function refresh() {
-    await fetchUser();
-  }
-
   const isAdmin = computed(() => user.value?.role === "admin");
   const isLoggedIn = computed(() => !!user.value);
 
@@ -61,7 +57,6 @@ export function useAuth() {
     login,
     register,
     logout,
-    refresh,
     fetchUser,
   };
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { v7 } from "uuid";
-import { requireAdminCsrf, parseBody } from "../../utils/admin-query";
+import { requireAdminCsrf, parseBody } from "../../utils/query";
 import { createProduct } from "../../utils/storage";
 import { logger } from "../../utils/logger";
 

@@ -179,38 +179,16 @@ export function csrfCheck(event: H3Event): void {
 
 // === 密码校验 ===
 
-export function validatePassword(password: string): { valid: boolean; message: string } {
-  if (password.length < 8) {
-    return { valid: false, message: "密码至少 8 位" };
-  }
-  return { valid: true, message: "" };
-}
-
-export function validateEmail(email: string): {
-  valid: boolean;
-  message: string;
-  normalized: string;
-} {
+export function requireValidEmail(email: string): string {
   const normalized = email.toLowerCase().trim();
   if (!normalized || !normalized.includes("@")) {
-    return { valid: false, message: "邮箱格式不正确", normalized: "" };
+    throw createError({ statusCode: 400, message: "邮箱格式不正确" });
   }
-  return { valid: true, message: "", normalized };
+  return normalized;
 }
 
-// 校验并规范化邮箱，不合法则抛 400
-export function requireValidEmail(email: string): string {
-  const result = validateEmail(email);
-  if (!result.valid) {
-    throw createError({ statusCode: 400, message: result.message });
-  }
-  return result.normalized;
-}
-
-// 校验密码强度，不合法则抛 400
 export function requireValidPassword(password: string): void {
-  const result = validatePassword(password);
-  if (!result.valid) {
-    throw createError({ statusCode: 400, message: result.message });
+  if (password.length < 8) {
+    throw createError({ statusCode: 400, message: "密码至少 8 位" });
   }
 }

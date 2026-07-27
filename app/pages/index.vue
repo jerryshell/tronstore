@@ -50,7 +50,7 @@ onMounted(async () => {
               <h2 class="text-lg font-semibold">余额</h2>
             </template>
             <div class="text-3xl font-bold text-primary">
-              {{ (auth.user.value.balance / 1_000_000).toFixed(6) }} USDT
+              {{ formatUsdtLabel(auth.user.value.balance) }}
             </div>
           </UCard>
         </template>

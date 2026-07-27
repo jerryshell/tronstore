@@ -65,7 +65,7 @@ function copyAddress(address: string) {
           <span>{{ detailUser.role }}</span>
 
           <span class="text-muted-foreground">余额</span>
-          <span>{{ (detailUser.balance / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailUser.balance) }}</span>
 
           <span class="text-muted-foreground">充值地址</span>
           <div v-if="detailUser.depositAddress" class="flex items-center gap-2">

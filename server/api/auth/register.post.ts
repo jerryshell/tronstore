@@ -8,7 +8,7 @@ import {
   createSessionCookie,
   toPublicUser,
 } from "../../utils/auth";
-import { parseBody } from "../../utils/admin-query";
+import { parseBody } from "../../utils/query";
 import { acquireRegistrationLock } from "../../utils/registration-lock";
 import { logger } from "../../utils/logger";
 

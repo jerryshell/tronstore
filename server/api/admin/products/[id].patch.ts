@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireAdminCsrf, requireParam, parseBody } from "../../../utils/admin-query";
+import { requireAdminCsrf, requireParam, parseBody } from "../../../utils/query";
 import { getProduct, updateProduct } from "../../../utils/storage";
 import { logger } from "../../../utils/logger";
 

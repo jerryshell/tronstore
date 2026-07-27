@@ -1,4 +1,10 @@
-import { type NatsConnection, type JetStreamClient, JSONCodec, AckPolicy } from "nats";
+import {
+  type NatsConnection,
+  type JetStreamClient,
+  JSONCodec,
+  AckPolicy,
+  type MsgHdrsImpl,
+} from "nats";
 import {
   getUserByAddress,
   createDeposit,
@@ -53,14 +59,35 @@ export async function startNatsSubscription(conn: NatsConnection, prefix: string
   consumeEvents(prefix);
 }
 
+const MAX_NAK_COUNT = 5;
+
+function getNakCount(msg: any): number {
+  return parseInt((msg.headers as MsgHdrsImpl)?.get?.("Nats-Nak-Count") ?? "0", 10) || 0;
+}
+
 async function processMessage(msg: any): Promise<void> {
   try {
     const event = jc.decode(msg.data) as TronechoTransfer;
     await processTransferEvent(event);
     msg.ack();
   } catch (error) {
-    logger.error("处理事件失败", { error: String(error) });
-    msg.nak();
+    const nakCount = getNakCount(msg);
+    if (nakCount >= MAX_NAK_COUNT) {
+      logger.error("消息处理失败，已达最大重试次数，丢弃", {
+        nakCount,
+        seq: (msg as any).seq,
+        error: String(error),
+      });
+      const sweeps = useStorage("sweeps");
+      const dead = ((await sweeps.getItem("deposit:dead")) as any[]) ?? [];
+      dead.push({ seq: (msg as any).seq, error: String(error), ts: Date.now() });
+      if (dead.length > 50) dead.splice(0, dead.length - 50);
+      await sweeps.setItem("deposit:dead", dead);
+      msg.ack();
+    } else {
+      logger.error("处理事件失败", { nakCount, error: String(error) });
+      msg.nak();
+    }
   }
 }
 

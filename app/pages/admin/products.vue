@@ -24,7 +24,7 @@ const columns = [
   {
     accessorKey: "price",
     header: "价格",
-    cell: ({ row }: any) => (row.original.price / 1_000_000).toFixed(6) + " USDT",
+    cell: ({ row }: any) => formatUsdtLabel(row.original.price),
   },
   {
     accessorKey: "enabled",
@@ -47,7 +47,7 @@ function getFormData() {
   return {
     name: formName.value,
     description: formDesc.value,
-    price: Math.round(formPrice.value * 1_000_000),
+    price: parseUsdt(formPrice.value),
     enabled: formEnabled.value,
   };
 }
@@ -118,7 +118,7 @@ function openEdit(product: any) {
   editProduct.value = product;
   formName.value = product.name;
   formDesc.value = product.description;
-  formPrice.value = product.price / 1_000_000;
+  formPrice.value = toUsdt(product.price);
   formEnabled.value = product.enabled;
   showAdd.value = true;
 }
@@ -166,7 +166,12 @@ onMounted(fetch);
           </template>
         </UTable>
 
-        <AdminTableState v-else :loading="loading" empty-message="暂无商品" />
+        <TableState
+          v-else
+          :loading="loading"
+          empty-message="暂无商品"
+          skeleton-class="h-12 w-full"
+        />
       </div>
     </template>
   </UDashboardPanel>
@@ -183,9 +188,12 @@ onMounted(fetch);
     @close="closeModal"
   />
 
-  <ModalsDeleteConfirmModal
+  <ModalsConfirmModal
     v-model:open="showDeleteConfirm"
-    :name="deleteTarget?.name"
+    title="确认删除"
+    :message="`确定要删除「${deleteTarget?.name}」吗？此操作不可撤销。`"
+    confirm-text="确认删除"
+    confirm-color="error"
     :loading="deleting"
     @confirm="deleteProduct"
     @close="showDeleteConfirm = false"

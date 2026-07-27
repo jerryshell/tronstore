@@ -12,7 +12,7 @@
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">余额</span>
-        <span>{{ (user.balance / 1_000_000).toFixed(6) }} USDT</span>
+        <span>{{ formatUsdtLabel(user.balance) }}</span>
       </div>
       <div class="flex justify-between">
         <span class="text-muted-foreground">费率</span

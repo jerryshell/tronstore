@@ -32,7 +32,7 @@ const open = defineModel<boolean>("open", { required: true });
           <span>{{ detailOrder.productSnapshot?.description || "-" }}</span>
 
           <span class="text-muted-foreground">购买价格</span>
-          <span>{{ (detailOrder.price / 1_000_000).toFixed(6) }} USDT</span>
+          <span>{{ formatUsdtLabel(detailOrder.price) }}</span>
 
           <span class="text-muted-foreground">下单时间</span>
           <span>{{ formatDate(detailOrder.createdAt) }}</span>

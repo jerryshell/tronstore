@@ -1,5 +1,5 @@
 import { requireUser } from "../utils/auth";
-import { parsePagination } from "../utils/admin-query";
+import { parsePagination } from "../utils/query";
 import { listDepositsByUser } from "../utils/storage";
 
 export default defineEventHandler(async (event) => {

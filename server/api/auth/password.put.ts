@@ -8,7 +8,7 @@ import {
   destroySession,
   csrfCheck,
 } from "../../utils/auth";
-import { parseBody } from "../../utils/admin-query";
+import { parseBody } from "../../utils/query";
 import { getUser, updateUser, deleteUserSessions } from "../../utils/storage";
 import { logger } from "../../utils/logger";
 

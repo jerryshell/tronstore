@@ -9,6 +9,7 @@ import type {
   SweepSettings,
   SessionData,
 } from "../../shared/types";
+import { USDT_CONTRACTS } from "../../shared/types";
 import { logger } from "./logger";
 
 // === 分页工具 ===
@@ -397,9 +398,5 @@ export async function cleanupExpiredSessions(): Promise<void> {
 // === USDT 工具 ===
 
 export function isUsdtAsset(asset: string, network: "nile" | "mainnet"): boolean {
-  const usdtContracts = {
-    nile: "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf",
-    mainnet: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
-  };
-  return asset === `tron:trc20/${usdtContracts[network]}`;
+  return asset === `tron:trc20/${USDT_CONTRACTS[network]}`;
 }
